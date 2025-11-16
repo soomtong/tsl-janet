@@ -7,6 +7,11 @@
   :repo "git+https://github.com/yourusername/tsl-janet.git"
   :dependencies ["https://github.com/janet-lang/spork.git"])
 
+(declare-executable
+  :name "tsl"
+  :entry "src/main.janet"
+  :install-path "build")
+
 # Declare the main translation CLI as an executable
 (declare-binscript
   :main "src/main.janet"

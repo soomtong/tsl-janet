@@ -9,6 +9,7 @@
 *.jimage
 jpm_tree/
 build/
+dist/
 
 # Native libraries
 *.so
