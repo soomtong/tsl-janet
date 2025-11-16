@@ -11,10 +11,11 @@
   - --source, -s: Source language (default: Korean)
   - --target, -t: Target language (default: English)
   - --temperature, -T: Temperature for generation (default: 0.3)
+  - --no-copy: Disable automatic clipboard copy (default: enabled)
   - First positional argument: text to translate
 
   Returns:
-  A struct with :text, :source, :target, and :temperature keys.
+  A struct with :text, :source, :target, :temperature, and :copy keys.
   ``
   [args]
 
@@ -22,6 +23,7 @@
   (var source "Korean")
   (var target "English")
   (var temperature prompt/DEFAULT_TEMPERATURE)
+  (var copy true)
   (var i 0)
 
   (while (< i (length args))
@@ -51,6 +53,10 @@
           (when parsed-temp
             (set temperature parsed-temp))))
 
+      # No-copy flag
+      (= arg "--no-copy")
+      (set copy false)
+
       # Positional argument (text)
       (nil? text)
       (set text arg)
@@ -63,7 +69,7 @@
 
     (set i (+ i 1)))
 
-  {:text text :source source :target target :temperature temperature})
+  {:text text :source source :target target :temperature temperature :copy copy})
 
 (defn make-groq-request
   ``Send a translation request to Groq API using the groq/compound-mini model.
@@ -134,12 +140,14 @@
   (eprint "  -s, --source <lang>      Source language (default: Korean)")
   (eprint "  -t, --target <lang>      Target language (default: English)")
   (eprint "  -T, --temperature <num>  Temperature 0.0-2.0 (default: 0.3)")
+  (eprint "  --no-copy                Disable automatic clipboard copy")
   (eprint "")
   (eprint "Examples:")
   (eprint "  janet src/main.janet \"안녕하세요\"")
   (eprint "  janet src/main.janet \"안녕하세요\" --target English")
   (eprint "  janet src/main.janet \"Hello\" -s English -t Korean")
-  (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5"))
+  (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5")
+  (eprint "  janet src/main.janet \"Hello\" --no-copy"))
 
 (defn main
   ``CLI entry point for the translation tool.
@@ -181,6 +189,7 @@
   (def source (parsed :source))
   (def target (parsed :target))
   (def temperature (parsed :temperature))
+  (def copy (parsed :copy))
 
   # Debug: print parsed values
   # (eprintf "Debug - Parsed text: %q" text)
@@ -202,7 +211,17 @@
     (do
       (print "")
       (print "Translation:")
-      (print result))
+      (print result)
+
+      # Copy to clipboard if enabled
+      (when copy
+        (try
+          (do
+            (sh/exec "sh" "-c" (string "echo " (string/format "%q" result) " | pbcopy"))
+            (print "📋 Copied to clipboard"))
+          ([err]
+            # Silently ignore if pbcopy is not available
+            nil))))
     (do
       (eprint "Translation failed.")
       (os/exit 1))))

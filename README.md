@@ -79,6 +79,9 @@ janet src/main.janet "你好" --source Chinese --target English
 # Temperature 조정 (창의성 vs 정확성)
 janet src/main.janet "안녕하세요" --temperature 0.1  # 더 정확하고 일관적
 janet src/main.janet "Hello" -s English -t Korean -T 0.7  # 더 창의적
+
+# 클립보드 복사 비활성화
+janet src/main.janet "Hello" --no-copy  # 클립보드에 복사하지 않음
 ```
 
 ### 사용 형식
@@ -97,6 +100,7 @@ janet src/main.janet <텍스트> [옵션]
   - 낮은 값 (0.0-0.3): 더 정확하고 일관적인 번역
   - 중간 값 (0.3-0.7): 균형잡힌 번역
   - 높은 값 (0.7-2.0): 더 창의적이고 다양한 표현
+- `--no-copy`: 자동 클립보드 복사 비활성화 (기본값: 활성화)
 
 ### 예제 출력
 
@@ -108,6 +112,7 @@ Temperature: 0.3
 
 Translation:
 Hello
+📋 Copied to clipboard
 ```
 
 ```bash
@@ -117,6 +122,7 @@ Temperature: 0.3
 
 Translation:
 안녕하세요, 세계!
+📋 Copied to clipboard
 ```
 
 ```bash
@@ -126,6 +132,17 @@ Temperature: 0.5
 
 Translation:
 Hola
+📋 Copied to clipboard
+```
+
+```bash
+$ janet src/main.janet "Hello" --no-copy
+Translating from Korean to English...
+Temperature: 0.3
+
+Translation:
+Hello
+# 클립보드 복사 안 됨
 ```
 
 ## API 정보 (API Information)

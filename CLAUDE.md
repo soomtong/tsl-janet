@@ -51,6 +51,9 @@ janet src/main.janet "Bonjour" -s French -t Korean
 janet src/main.janet "안녕하세요" -T 0.1  # More accurate
 janet src/main.janet "Hello" -s English -t Korean --temperature 0.7  # More creative
 
+# With clipboard control
+janet src/main.janet "안녕하세요" --no-copy  # Disable automatic clipboard copy
+
 # With environment variable
 GROQ_API_KEY=your-key janet src/main.janet "你好" -s Chinese -t English
 ```
@@ -89,10 +92,10 @@ The project follows a clean, organized structure:
 
 ### Source Files
 - `src/main.janet` - Main translation CLI entry point
-  - `parse-args` - Parse command line flags (--source, --target, --temperature)
+  - `parse-args` - Parse command line flags (--source, --target, --temperature, --no-copy)
   - `make-groq-request` - Handles API calls to Groq with temperature
   - `print-usage` - Display usage information
-  - `main` - Entry point function
+  - `main` - Entry point function with automatic clipboard copy (macOS)
 
 - `src/prompt.janet` - Prompt and parameter management module
   - `DEFAULT_TEMPERATURE` - Constant (0.3 for translation)
@@ -109,11 +112,12 @@ The project follows a clean, organized structure:
 - Messages array: `[{:role "system" :content "..."} {:role "user" :content "..."}]`
   - System message: Detailed translation guidelines
   - User message: `"Translate from [source] to [target]: [text]"`
-- Parsed args format: `{:text "..." :source "Korean" :target "English" :temperature 0.3}`
+- Parsed args format: `{:text "..." :source "Korean" :target "English" :temperature 0.3 :copy true}`
 - Default values:
   - source: Korean
   - target: English
   - temperature: 0.3 (optimized for translation accuracy)
+  - copy: true (automatic clipboard copy enabled by default)
 
 ### Documentation Standards
 All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/documentation.html):
