@@ -149,7 +149,7 @@
   (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5")
   (eprint "  janet src/main.janet \"Hello\" --no-copy"))
 
-(defn main
+(defn main [& args]
   ``CLI entry point for the translation tool.
 
   Arguments:
@@ -161,7 +161,8 @@
 
   Requires GROQ_API_KEY environment variable to be set.
   ``
-  [& args]
+  # The `args` parameter is unused, but required for the entry point.
+  # We use `(dyn :args)` to get arguments reliably.
 
   # Check for API key
   (def api-key (os/getenv "GROQ_API_KEY"))
@@ -170,18 +171,17 @@
     (eprint "Please set it with: export GROQ_API_KEY='your-api-key'")
     (os/exit 1))
 
-  # Debug: print raw arguments
-  # (eprintf "Debug - Raw args: %q" args)
-  # (eprintf "Debug - Args length: %d" (length args))
+  # Get all command line args dynamically for consistency
+  (def all-args (dyn :args))
 
-  # Skip script name if it's the first argument
+  # Determine the actual arguments for parsing by slicing off the executable/script
   (def actual-args
-    (if (and (> (length args) 0)
-             (string/has-suffix? ".janet" (get args 0)))
-      (tuple/slice args 1)
-      args))
-
-  # (eprintf "Debug - Actual args after removing script name: %q" actual-args)
+    (if (and (> (length all-args) 1)
+             (string/has-suffix? ".janet" (get all-args 1)))
+      # Running with `janet src/main.janet ...`, slice first 2
+      (tuple/slice all-args 2)
+      # Running compiled binary `./tsl ...`, slice first 1
+      (tuple/slice all-args 1)))
 
   # Parse arguments
   (def parsed (parse-args actual-args))
@@ -190,10 +190,6 @@
   (def target (parsed :target))
   (def temperature (parsed :temperature))
   (def copy (parsed :copy))
-
-  # Debug: print parsed values
-  # (eprintf "Debug - Parsed text: %q" text)
-  # (eprintf "Debug - Source: %s, Target: %s" source target)
 
   # Validate text
   (unless text
