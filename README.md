@@ -133,12 +133,22 @@ jpm clean
 프로젝트는 [spork/test](https://janet-lang.org/spork/api/test.html)를 사용합니다.
 
 ```bash
-# 전체 테스트 실행
+# 권장: jpm을 통한 전체 테스트 실행
+jpm test
+
+# 또는 개별 테스트 파일 실행
 janet test/test-basics.janet
 janet test/test-main.janet
+```
 
-# 또는 jpm을 통해 실행
-jpm test
+**jpm test 출력 예제:**
+```
+$ jpm test
+running test/test-basics.janet ...
+test suite test/test-basics.janet finished in 0.000 seconds - 7 of 7 tests passed.
+running test/test-main.janet ...
+test suite test/test-main.janet finished in 0.000 seconds - 10 of 10 tests passed.
+All tests passed.
 ```
 
 **테스트 커버리지:**
@@ -150,12 +160,7 @@ jpm test
 - ✅ 문자열 및 데이터 구조 작업
 - ✅ 에러 핸들링
 
-### 테스트 결과
-
-```
-test-basics.janet: 7/7 통과 ✅
-test-main.janet:  10/10 통과 ✅
-```
+**총 17개 테스트 모두 통과 ✅**
 
 ## 프로젝트 구조 (Project Structure)
 

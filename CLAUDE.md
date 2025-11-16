@@ -10,15 +10,28 @@ tsl-janet is a production-ready translation CLI tool built with Janet language u
 
 ### Testing
 ```bash
-# Run all tests
+# Recommended: Run all tests with jpm
+jpm test
+
+# This will automatically run all tests in test/ directory:
+# - test/test-basics.janet (7 tests)
+# - test/test-main.janet (10 tests)
+
+# Or run individual test files
 janet test/test-basics.janet
 janet test/test-main.janet
 
-# Or use jpm
-jpm test
-
 # Install test dependency (spork) if needed
 jpm deps
+```
+
+**Expected output:**
+```
+running test/test-basics.janet ...
+test suite test/test-basics.janet finished in 0.000 seconds - 7 of 7 tests passed.
+running test/test-main.janet ...
+test suite test/test-main.janet finished in 0.000 seconds - 10 of 10 tests passed.
+All tests passed.
 ```
 
 ### Running the CLI
