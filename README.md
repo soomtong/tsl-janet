@@ -28,8 +28,8 @@ jpm deps
 # 3. API 키 설정
 export GROQ_API_KEY="your-api-key-here"
 
-# 4. 번역 실행
-janet src/main.janet "Hello world"
+# 4. 번역 실행 (Korean → English 기본값)
+janet src/main.janet "안녕하세요"
 ```
 
 ## 설치 (Installation)
@@ -64,43 +64,57 @@ export GROQ_API_KEY="your-api-key-here"
 ### 기본 번역
 
 ```bash
-# 한국어로 번역 (기본값)
-janet src/main.janet "Hello world"
+# 기본값 사용 (Korean → English)
+janet src/main.janet "안녕하세요"
 
-# 다른 언어로 번역
-janet src/main.janet "Hello world" English
-janet src/main.janet "Bonjour" Korean
-janet src/main.janet "你好" Spanish
-janet src/main.janet "こんにちは" French
+# Target 언어 지정
+janet src/main.janet "안녕하세요" --target Spanish
+janet src/main.janet "안녕하세요" -t French
+
+# Source와 Target 모두 지정
+janet src/main.janet "Hello world" --source English --target Korean
+janet src/main.janet "Bonjour" -s French -t Korean
+janet src/main.janet "你好" --source Chinese --target English
 ```
 
 ### 사용 형식
 
 ```
-janet src/main.janet <텍스트> [목표언어]
+janet src/main.janet <텍스트> [옵션]
 ```
 
 **인자:**
 - `<텍스트>`: 번역할 텍스트 (필수)
-- `[목표언어]`: 번역할 언어 (선택, 기본값: Korean)
+
+**옵션:**
+- `-s, --source <언어>`: 원본 언어 (기본값: Korean)
+- `-t, --target <언어>`: 대상 언어 (기본값: English)
 
 ### 예제 출력
 
 ```bash
 $ export GROQ_API_KEY="gsk_..."
-$ janet src/main.janet "Hello world"
-Translating to Korean...
+$ janet src/main.janet "안녕하세요"
+Translating from Korean to English...
+
+Translation:
+Hello
+```
+
+```bash
+$ janet src/main.janet "Hello world" --source English --target Korean
+Translating from English to Korean...
 
 Translation:
 안녕하세요, 세계!
 ```
 
 ```bash
-$ janet src/main.janet "안녕하세요" English
-Translating to English...
+$ janet src/main.janet "Bonjour" -s French -t Spanish
+Translating from French to Spanish...
 
 Translation:
-Hello
+Hola
 ```
 
 ## API 정보 (API Information)

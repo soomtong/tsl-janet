@@ -36,14 +36,19 @@ All tests passed.
 
 ### Running the CLI
 ```bash
-# Basic usage (translates to Korean by default)
-janet src/main.janet "Hello world"
+# Basic usage with defaults (Korean → English)
+janet src/main.janet "안녕하세요"
 
-# Translate to specific language
-janet src/main.janet "Bonjour" English
+# Specify target language only
+janet src/main.janet "안녕하세요" --target Spanish
+janet src/main.janet "안녕하세요" -t French
+
+# Specify both source and target languages
+janet src/main.janet "Hello world" --source English --target Korean
+janet src/main.janet "Bonjour" -s French -t Korean
 
 # With environment variable
-GROQ_API_KEY=your-key janet src/main.janet "Your text" Spanish
+GROQ_API_KEY=your-key janet src/main.janet "你好" -s Chinese -t English
 ```
 
 ## Environment Setup
@@ -80,8 +85,9 @@ The project follows a clean, organized structure:
 
 ### Source Files
 - `src/main.janet` - Main translation CLI entry point
+  - `parse-args` - Parse command line flags (--source, --target)
   - `make-groq-request` - Handles API calls to Groq
-  - `validate-args` - CLI argument validation
+  - `print-usage` - Display usage information
   - `main` - Entry point function
 
 ### Test Files
@@ -91,7 +97,9 @@ The project follows a clean, organized structure:
 ### Key Data Structures
 - API payload format: `{:model "compound-mini" :messages [...]}`
 - Messages format: `{:role "user" :content "..."}`
-- Prompt format: `"Translate the following text to [lang]: [text]"`
+- Prompt format: `"Translate from [source] to [target]: [text]"`
+- Parsed args format: `{:text "..." :source "Korean" :target "English"}`
+- Default languages: source=Korean, target=English
 
 ### Documentation Standards
 All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/documentation.html):

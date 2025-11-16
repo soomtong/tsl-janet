@@ -3,26 +3,74 @@
 (import spork/json)
 (import spork/http)
 
+(defn parse-args
+  ``Parse command line arguments with flags.
+
+  Supports:
+  - --source, -s: Source language (default: Korean)
+  - --target, -t: Target language (default: English)
+  - First positional argument: text to translate
+
+  Returns:
+  A struct with :text, :source, and :target keys.
+  ``
+  [args]
+
+  (var text nil)
+  (var source "Korean")
+  (var target "English")
+  (var i 0)
+
+  (while (< i (length args))
+    (def arg (get args i))
+    (cond
+      # Source language flags
+      (or (= arg "--source") (= arg "-s"))
+      (do
+        (set i (+ i 1))
+        (when (< i (length args))
+          (set source (get args i))))
+
+      # Target language flags
+      (or (= arg "--target") (= arg "-t"))
+      (do
+        (set i (+ i 1))
+        (when (< i (length args))
+          (set target (get args i))))
+
+      # Positional argument (text)
+      (nil? text)
+      (set text arg)
+
+      # Unknown flag or extra argument
+      (string/has-prefix? "--" arg)
+      (do
+        (eprintf "Unknown flag: %s" arg)
+        (os/exit 1)))
+
+    (set i (+ i 1)))
+
+  {:text text :source source :target target})
+
 (defn make-groq-request
   ``Send a translation request to Groq API using the compound-mini model.
 
   Arguments:
   - text: The text string to translate
   - api-key: Groq API key for authentication
-  - target-lang: Target language for translation (default: "Korean")
+  - source-lang: Source language (default: "Korean")
+  - target-lang: Target language (default: "English")
 
   Returns:
   The translated text as a string, or nil if the request fails.
 
   Example:
-    (make-groq-request "Hello world" "your-api-key" "Korean")
+    (make-groq-request "Hello world" "your-api-key" "English" "Korean")
   ``
-  [text api-key &opt target-lang]
+  [text api-key source-lang target-lang]
 
-  (default target-lang "Korean")
-
-  # Construct API payload
-  (def prompt (string "Translate the following text to " target-lang ": " text))
+  # Construct API payload with explicit source and target
+  (def prompt (string "Translate from " source-lang " to " target-lang ": " text))
   (def payload
     {:model "compound-mini"
      :messages [{:role "user"
@@ -53,26 +101,21 @@
         (eprintf "API error: HTTP %d - %s" (response :status) (response :message))
         nil))))
 
-(defn validate-args
-  ``Validate command line arguments.
+(defn print-usage
+  ``Print usage information.``
+  []
 
-  Arguments:
-  - args: Array of command line arguments
-
-  Returns:
-  The joined text string if valid, or nil if invalid.
-  ``
-  [args]
-
-  (when (< (length args) 1)
-    (eprint "Usage: janet poc1.janet <text-to-translate> [target-language]")
-    (eprint "")
-    (eprint "Example:")
-    (eprint "  janet poc1.janet \"Hello world\" Korean")
-    (eprint "  janet poc1.janet \"Bonjour\" English")
-    (os/exit 1))
-
-  args)
+  (eprint "Usage: janet src/main.janet <text> [options]")
+  (eprint "")
+  (eprint "Options:")
+  (eprint "  -s, --source <lang>   Source language (default: Korean)")
+  (eprint "  -t, --target <lang>   Target language (default: English)")
+  (eprint "")
+  (eprint "Examples:")
+  (eprint "  janet src/main.janet \"안녕하세요\"")
+  (eprint "  janet src/main.janet \"안녕하세요\" --target English")
+  (eprint "  janet src/main.janet \"Hello\" --source English --target Korean")
+  (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean"))
 
 (defn main
   ``CLI entry point for the translation tool.
@@ -80,8 +123,10 @@
   Arguments:
   - args: Command line arguments passed to the script
 
-  The first argument is the text to translate.
-  The optional second argument is the target language (default: Korean).
+  Supports flags:
+  - --source, -s: Source language (default: Korean)
+  - --target, -t: Target language (default: English)
+
   Requires GROQ_API_KEY environment variable to be set.
   ``
   [& args]
@@ -93,15 +138,22 @@
     (eprint "Please set it with: export GROQ_API_KEY='your-api-key'")
     (os/exit 1))
 
-  # Validate and parse arguments
-  (validate-args args)
+  # Parse arguments
+  (def parsed (parse-args args))
+  (def text (parsed :text))
+  (def source (parsed :source))
+  (def target (parsed :target))
 
-  (def text (get args 0))
-  (def target-lang (get args 1 "Korean"))
+  # Validate text
+  (unless text
+    (eprint "Error: No text provided to translate.")
+    (eprint "")
+    (print-usage)
+    (os/exit 1))
 
   # Execute translation
-  (print "Translating to " target-lang "...")
-  (def result (make-groq-request text api-key target-lang))
+  (print "Translating from " source " to " target "...")
+  (def result (make-groq-request text api-key source target))
 
   (if result
     (do

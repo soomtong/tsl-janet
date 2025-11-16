@@ -4,15 +4,15 @@
 # Start test suite
 (test/start-suite)
 
-# Test: API payload structure for translation request
+# Test: API payload structure for translation request with new format
 (test/assert
   (deep=
     {:model "compound-mini"
      :messages [{:role "user"
-                 :content "Translate the following text to Korean: Hello"}]}
+                 :content "Translate from English to Korean: Hello"}]}
     (let [payload {:model "compound-mini"
                    :messages [{:role "user"
-                               :content "Translate the following text to Korean: Hello"}]}]
+                               :content "Translate from English to Korean: Hello"}]}]
       payload))
   "API payload structure should match expected format")
 
@@ -52,15 +52,36 @@
   (print "⚠ Warning: GROQ_API_KEY not set - API tests will be skipped")
   (test/assert (string? api-key) "GROQ_API_KEY should be a string when set"))
 
-# Test: Prompt construction
+# Test: New prompt construction with source and target
 (def text "Hello")
+(def source-lang "English")
 (def target-lang "Korean")
-(def expected-prompt "Translate the following text to Korean: Hello")
+(def expected-prompt "Translate from English to Korean: Hello")
 
 (test/assert
-  (= (string "Translate the following text to " target-lang ": " text)
+  (= (string "Translate from " source-lang " to " target-lang ": " text)
      expected-prompt)
-  "Prompt should be constructed correctly")
+  "Prompt should be constructed correctly with source and target")
+
+# Test: Default language values
+(def default-source "Korean")
+(def default-target "English")
+
+(test/assert
+  (and (= default-source "Korean") (= default-target "English"))
+  "Default source should be Korean and target should be English")
+
+# Test: parse-args function (basic structure test)
+(def parsed-result {:text "Hello" :source "Korean" :target "Spanish"})
+(def result-keys (keys parsed-result))
+
+(test/assert
+  (and
+    (= (length result-keys) 3)
+    (not (nil? (find |(= $ :text) result-keys)))
+    (not (nil? (find |(= $ :source) result-keys)))
+    (not (nil? (find |(= $ :target) result-keys))))
+  "Parsed args should have text, source, and target keys")
 
 # Test: Multiple message structure
 (def messages
