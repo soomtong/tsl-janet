@@ -217,7 +217,12 @@
       (when copy
         (try
           (do
-            (sh/exec "sh" "-c" (string "echo " (string/format "%q" result) " | pbcopy"))
+            # Remove quotes and newlines
+            (def without-quotes (string/replace-all "\"" "" result))
+            (def clean-result (string/replace-all "\n" " " without-quotes))
+            # Escape single quotes for shell
+            (def escaped (string/replace-all "'" "'\"'\"'" clean-result))
+            (sh/exec "sh" "-c" (string "printf '%s' '" escaped "' | pbcopy"))
             (print "📋 Copied to clipboard"))
           ([err]
             # Silently ignore if pbcopy is not available
