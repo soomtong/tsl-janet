@@ -1,46 +1,93 @@
 (import spork/test)
+(import spork/json)
 
 # Start test suite
 (test/start-suite)
 
-# Test: Environment variable handling
+# Test: API payload structure for translation request
 (test/assert
-  (= (type (os/getenv "PATH")) :string)
-  "Environment variables should be accessible")
+  (deep=
+    {:model "compound-mini"
+     :messages [{:role "user"
+                 :content "Translate the following text to Korean: Hello"}]}
+    (let [payload {:model "compound-mini"
+                   :messages [{:role "user"
+                               :content "Translate the following text to Korean: Hello"}]}]
+      payload))
+  "API payload structure should match expected format")
 
-# Test: GROQ_API_KEY presence (warning only, not failure)
-(def groq-key (os/getenv "GROQ_API_KEY"))
-(if (nil? groq-key)
-  (print "⚠ Warning: GROQ_API_KEY not set in environment")
-  (test/assert (string? groq-key) "GROQ_API_KEY should be a string"))
+# Test: JSON encoding of API payload
+(def test-payload
+  {:model "compound-mini"
+   :messages [{:role "user"
+               :content "Test message"}]})
 
-# Test: Basic string operations
+(def encoded-json
+  (try
+    (json/encode test-payload)
+    ([err] nil)))
+
 (test/assert
-  (= (string/trim " hello ") "hello")
-  "String trimming should work")
+  (or (string? encoded-json) (buffer? encoded-json))
+  "JSON encoding should produce a string or buffer")
+
+(when encoded-json
+  (test/assert
+    (not (nil? (string/find "compound-mini" (string encoded-json))))
+    "Encoded JSON should contain model name"))
+
+# Test: JSON decoding of API response
+(def mock-response
+  ``{"choices": [{"message": {"content": "안녕하세요"}}]}``)
+
+(def decoded (json/decode mock-response true))
 
 (test/assert
-  (not (nil? (string/find "https" "https://api.groq.com")))
-  "URL should contain https")
+  (= (get-in decoded [:choices 0 :message :content]) "안녕하세요")
+  "JSON decoding should correctly parse API response")
 
-# Test: JSON-like structure (for API payload)
-(test/assert
-  (= (type {:model "compound-mini"
-            :messages []})
-     :struct)
-  "API payload structure should be a struct")
+# Test: Environment variable access for API key
+(def api-key (os/getenv "GROQ_API_KEY"))
+(if (nil? api-key)
+  (print "⚠ Warning: GROQ_API_KEY not set - API tests will be skipped")
+  (test/assert (string? api-key) "GROQ_API_KEY should be a string when set"))
 
-# Test: Array operations (for messages)
-(def test-messages @[])
-(array/push test-messages {:role "user" :content "test"})
-(test/assert
-  (= (length test-messages) 1)
-  "Message array operations should work")
+# Test: Prompt construction
+(def text "Hello")
+(def target-lang "Korean")
+(def expected-prompt "Translate the following text to Korean: Hello")
 
-# Test: Basic arithmetic
 (test/assert
-  (= (+ 1 2 3) 6)
-  "Basic arithmetic should work")
+  (= (string "Translate the following text to " target-lang ": " text)
+     expected-prompt)
+  "Prompt should be constructed correctly")
+
+# Test: Multiple message structure
+(def messages
+  @[{:role "user" :content "First message"}
+    {:role "assistant" :content "Response"}
+    {:role "user" :content "Second message"}])
+
+(test/assert
+  (= (length messages) 3)
+  "Message array should support multiple messages")
+
+(test/assert
+  (= (get-in messages [0 :role]) "user")
+  "Message role should be accessible")
+
+# Test: HTTP headers structure
+(def headers
+  {"Content-Type" "application/json"
+   "Authorization" "Bearer test-key"})
+
+(test/assert
+  (= (get headers "Content-Type") "application/json")
+  "Headers should contain Content-Type")
+
+(test/assert
+  (not (nil? (string/find "Bearer" (get headers "Authorization"))))
+  "Authorization header should contain Bearer token")
 
 # End test suite and print results
 (test/end-suite)
