@@ -67,7 +67,7 @@ Or create a `.env` file (already gitignored).
 ## API Integration Details
 
 - **Base URL**: `https://api.groq.com/openai/v1`
-- **Model**: `compound-mini` ([documentation](https://console.groq.com/docs/compound/systems/compound-mini))
+- **Model**: `groq/compound-mini`
 - **API Format**: OpenAI-compatible endpoint
 
 ## Testing Framework
@@ -105,7 +105,7 @@ The project follows a clean, organized structure:
 - `test/test-main.janet` - Main translation feature tests (10 tests)
 
 ### Key Data Structures
-- API payload format: `{:model "compound-mini" :messages [...] :temperature 0.3}`
+- API payload format: `{:model "groq/compound-mini" :messages [...] :temperature 0.3}`
 - Messages array: `[{:role "system" :content "..."} {:role "user" :content "..."}]`
   - System message: Detailed translation guidelines
   - User message: `"Translate from [source] to [target]: [text]"`

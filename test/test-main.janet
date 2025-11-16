@@ -26,7 +26,7 @@
 
 # Test: JSON encoding of API payload
 (def test-payload
-  {:model "compound-mini"
+  {:model "groq/compound-mini"
    :messages [{:role "user"
                :content "Test message"}]})
 
@@ -41,7 +41,7 @@
 
 (when encoded-json
   (test/assert
-    (not (nil? (string/find "compound-mini" (string encoded-json))))
+    (not (nil? (string/find "groq/compound-mini" (string encoded-json))))
     "Encoded JSON should contain model name"))
 
 # Test: JSON decoding of API response

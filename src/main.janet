@@ -1,7 +1,7 @@
 #!/usr/bin/env janet
 
 (import spork/json)
-(import spork/http)
+(import spork/sh)
 (import ./prompt)
 
 (defn parse-args
@@ -66,7 +66,7 @@
   {:text text :source source :target target :temperature temperature})
 
 (defn make-groq-request
-  ``Send a translation request to Groq API using the compound-mini model.
+  ``Send a translation request to Groq API using the groq/compound-mini model.
 
   Arguments:
   - text: The text string to translate
@@ -89,33 +89,39 @@
 
   # Construct API payload
   (def payload
-    {:model "compound-mini"
+    {:model "groq/compound-mini"
      :messages messages
      :temperature validated-temp})
 
-  # Encode to JSON
-  (def json-body (json/encode payload))
+  # Encode to JSON and ensure it's a string
+  (def json-body (string (json/encode payload)))
 
-  # Make HTTP POST request
-  (def response
+  # Make HTTP POST request using curl via spork/sh
+  (def response-body
     (try
-      (http/request "POST" "https://api.groq.com/openai/v1/chat/completions"
-        :body json-body
-        :headers {"Content-Type" "application/json"
-                  "Authorization" (string "Bearer " api-key)})
+      (sh/exec-slurp
+        "curl" "-s" "-X" "POST"
+        "https://api.groq.com/openai/v1/chat/completions"
+        "-H" "Content-Type: application/json"
+        "-H" (string "Authorization: Bearer " api-key)
+        "-d" json-body)
       ([err]
         (eprint "HTTP request failed: " err)
         nil)))
 
   # Handle response
-  (when response
-    (if (= (response :status) 200)
+  (when response-body
+    (try
       (do
-        (def body (http/read-body response))
-        (def parsed (json/decode body true))
-        (get-in parsed [:choices 0 :message :content]))
-      (do
-        (eprintf "API error: HTTP %d - %s" (response :status) (response :message))
+        (def parsed (json/decode response-body true))
+        (if-let [error (get parsed :error)]
+          (do
+            (eprintf "API error: %s" (get error :message))
+            nil)
+          (get-in parsed [:choices 0 :message :content])))
+      ([err]
+        (eprint "Failed to parse API response: " err)
+        (eprint "Response: " response-body)
         nil))))
 
 (defn print-usage
@@ -156,12 +162,29 @@
     (eprint "Please set it with: export GROQ_API_KEY='your-api-key'")
     (os/exit 1))
 
+  # Debug: print raw arguments
+  # (eprintf "Debug - Raw args: %q" args)
+  # (eprintf "Debug - Args length: %d" (length args))
+
+  # Skip script name if it's the first argument
+  (def actual-args
+    (if (and (> (length args) 0)
+             (string/has-suffix? ".janet" (get args 0)))
+      (tuple/slice args 1)
+      args))
+
+  # (eprintf "Debug - Actual args after removing script name: %q" actual-args)
+
   # Parse arguments
-  (def parsed (parse-args args))
+  (def parsed (parse-args actual-args))
   (def text (parsed :text))
   (def source (parsed :source))
   (def target (parsed :target))
   (def temperature (parsed :temperature))
+
+  # Debug: print parsed values
+  # (eprintf "Debug - Parsed text: %q" text)
+  # (eprintf "Debug - Source: %s, Target: %s" source target)
 
   # Validate text
   (unless text

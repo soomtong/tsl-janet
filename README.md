@@ -132,7 +132,7 @@ Hola
 
 - **Provider**: [Groq](https://groq.com)
 - **Base URL**: `https://api.groq.com/openai/v1`
-- **Model**: [compound-mini](https://console.groq.com/docs/compound/systems/compound-mini)
+- **Model**: `groq/compound-mini`
 - **Endpoint**: `/chat/completions` (OpenAI-compatible)
 - **Default Temperature**: 0.3 (optimized for translation accuracy)
 - **System Prompt**: Detailed translation guidelines included

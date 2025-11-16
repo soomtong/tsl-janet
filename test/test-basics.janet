@@ -25,7 +25,7 @@
 
 # Test: JSON-like structure (for API payload)
 (test/assert
-  (= (type {:model "compound-mini"
+  (= (type {:model "groq/compound-mini"
             :messages []})
      :struct)
   "API payload structure should be a struct")
