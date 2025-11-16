@@ -1,20 +1,28 @@
 (import spork/test)
 (import spork/json)
+(import ../src/prompt)
 
 # Start test suite
 (test/start-suite)
 
-# Test: API payload structure for translation request with new format
+# Test: API payload structure with system and user messages
+(def test-messages (prompt/build-messages "Hello" "English" "Korean"))
+
 (test/assert
-  (deep=
-    {:model "compound-mini"
-     :messages [{:role "user"
-                 :content "Translate from English to Korean: Hello"}]}
-    (let [payload {:model "compound-mini"
-                   :messages [{:role "user"
-                               :content "Translate from English to Korean: Hello"}]}]
-      payload))
-  "API payload structure should match expected format")
+  (= (length test-messages) 2)
+  "Messages should contain system and user messages")
+
+(test/assert
+  (= (get-in test-messages [0 :role]) "system")
+  "First message should be system role")
+
+(test/assert
+  (= (get-in test-messages [1 :role]) "user")
+  "Second message should be user role")
+
+(test/assert
+  (= (get-in test-messages [1 :content]) "Translate from English to Korean: Hello")
+  "User message should contain translation prompt")
 
 # Test: JSON encoding of API payload
 (def test-payload
@@ -72,16 +80,42 @@
   "Default source should be Korean and target should be English")
 
 # Test: parse-args function (basic structure test)
-(def parsed-result {:text "Hello" :source "Korean" :target "Spanish"})
+(def parsed-result {:text "Hello" :source "Korean" :target "Spanish" :temperature 0.3})
 (def result-keys (keys parsed-result))
 
 (test/assert
   (and
-    (= (length result-keys) 3)
+    (= (length result-keys) 4)
     (not (nil? (find |(= $ :text) result-keys)))
     (not (nil? (find |(= $ :source) result-keys)))
-    (not (nil? (find |(= $ :target) result-keys))))
-  "Parsed args should have text, source, and target keys")
+    (not (nil? (find |(= $ :target) result-keys)))
+    (not (nil? (find |(= $ :temperature) result-keys))))
+  "Parsed args should have text, source, target, and temperature keys")
+
+# Test: Temperature default value
+(test/assert
+  (= prompt/DEFAULT_TEMPERATURE 0.3)
+  "Default temperature should be 0.3 for translation accuracy")
+
+# Test: Temperature validation
+(test/assert
+  (= (prompt/validate-temperature 0.5) 0.5)
+  "Valid temperature should pass through")
+
+(test/assert
+  (= (prompt/validate-temperature -1) prompt/DEFAULT_TEMPERATURE)
+  "Negative temperature should return default")
+
+(test/assert
+  (= (prompt/validate-temperature 3) prompt/DEFAULT_TEMPERATURE)
+  "Temperature > 2 should return default")
+
+# Test: System prompt exists
+(def system-prompt (prompt/get-system-prompt))
+
+(test/assert
+  (and (string? system-prompt) (> (length system-prompt) 100))
+  "System prompt should be a substantial string")
 
 # Test: Multiple message structure
 (def messages

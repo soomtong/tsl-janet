@@ -75,6 +75,10 @@ janet src/main.janet "안녕하세요" -t French
 janet src/main.janet "Hello world" --source English --target Korean
 janet src/main.janet "Bonjour" -s French -t Korean
 janet src/main.janet "你好" --source Chinese --target English
+
+# Temperature 조정 (창의성 vs 정확성)
+janet src/main.janet "안녕하세요" --temperature 0.1  # 더 정확하고 일관적
+janet src/main.janet "Hello" -s English -t Korean -T 0.7  # 더 창의적
 ```
 
 ### 사용 형식
@@ -89,6 +93,10 @@ janet src/main.janet <텍스트> [옵션]
 **옵션:**
 - `-s, --source <언어>`: 원본 언어 (기본값: Korean)
 - `-t, --target <언어>`: 대상 언어 (기본값: English)
+- `-T, --temperature <숫자>`: Temperature 0.0-2.0 (기본값: 0.3)
+  - 낮은 값 (0.0-0.3): 더 정확하고 일관적인 번역
+  - 중간 값 (0.3-0.7): 균형잡힌 번역
+  - 높은 값 (0.7-2.0): 더 창의적이고 다양한 표현
 
 ### 예제 출력
 
@@ -96,6 +104,7 @@ janet src/main.janet <텍스트> [옵션]
 $ export GROQ_API_KEY="gsk_..."
 $ janet src/main.janet "안녕하세요"
 Translating from Korean to English...
+Temperature: 0.3
 
 Translation:
 Hello
@@ -104,14 +113,16 @@ Hello
 ```bash
 $ janet src/main.janet "Hello world" --source English --target Korean
 Translating from English to Korean...
+Temperature: 0.3
 
 Translation:
 안녕하세요, 세계!
 ```
 
 ```bash
-$ janet src/main.janet "Bonjour" -s French -t Spanish
+$ janet src/main.janet "Bonjour" -s French -t Spanish -T 0.5
 Translating from French to Spanish...
+Temperature: 0.5
 
 Translation:
 Hola
@@ -123,6 +134,8 @@ Hola
 - **Base URL**: `https://api.groq.com/openai/v1`
 - **Model**: [compound-mini](https://console.groq.com/docs/compound/systems/compound-mini)
 - **Endpoint**: `/chat/completions` (OpenAI-compatible)
+- **Default Temperature**: 0.3 (optimized for translation accuracy)
+- **System Prompt**: Detailed translation guidelines included
 
 ## 개발 (Development)
 
@@ -181,7 +194,8 @@ All tests passed.
 ```
 tsl-janet/
 ├── src/
-│   └── main.janet      # 번역 CLI 도구 (메인)
+│   ├── main.janet      # 번역 CLI 도구 (메인)
+│   └── prompt.janet    # 프롬프트 및 파라미터 관리 모듈
 ├── test/
 │   ├── test-basics.janet # 기본 테스트 스위트
 │   └── test-main.janet   # 메인 기능 테스트 스위트

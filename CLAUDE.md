@@ -47,6 +47,10 @@ janet src/main.janet "안녕하세요" -t French
 janet src/main.janet "Hello world" --source English --target Korean
 janet src/main.janet "Bonjour" -s French -t Korean
 
+# With temperature control
+janet src/main.janet "안녕하세요" -T 0.1  # More accurate
+janet src/main.janet "Hello" -s English -t Korean --temperature 0.7  # More creative
+
 # With environment variable
 GROQ_API_KEY=your-key janet src/main.janet "你好" -s Chinese -t English
 ```
@@ -85,21 +89,31 @@ The project follows a clean, organized structure:
 
 ### Source Files
 - `src/main.janet` - Main translation CLI entry point
-  - `parse-args` - Parse command line flags (--source, --target)
-  - `make-groq-request` - Handles API calls to Groq
+  - `parse-args` - Parse command line flags (--source, --target, --temperature)
+  - `make-groq-request` - Handles API calls to Groq with temperature
   - `print-usage` - Display usage information
   - `main` - Entry point function
+
+- `src/prompt.janet` - Prompt and parameter management module
+  - `DEFAULT_TEMPERATURE` - Constant (0.3 for translation)
+  - `get-system-prompt` - Returns detailed translation guidelines
+  - `build-messages` - Constructs system + user message array
+  - `validate-temperature` - Validates temperature range (0.0-2.0)
 
 ### Test Files
 - `test/test-basics.janet` - Basic functionality tests (7 tests)
 - `test/test-main.janet` - Main translation feature tests (10 tests)
 
 ### Key Data Structures
-- API payload format: `{:model "compound-mini" :messages [...]}`
-- Messages format: `{:role "user" :content "..."}`
-- Prompt format: `"Translate from [source] to [target]: [text]"`
-- Parsed args format: `{:text "..." :source "Korean" :target "English"}`
-- Default languages: source=Korean, target=English
+- API payload format: `{:model "compound-mini" :messages [...] :temperature 0.3}`
+- Messages array: `[{:role "system" :content "..."} {:role "user" :content "..."}]`
+  - System message: Detailed translation guidelines
+  - User message: `"Translate from [source] to [target]: [text]"`
+- Parsed args format: `{:text "..." :source "Korean" :target "English" :temperature 0.3}`
+- Default values:
+  - source: Korean
+  - target: English
+  - temperature: 0.3 (optimized for translation accuracy)
 
 ### Documentation Standards
 All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/documentation.html):

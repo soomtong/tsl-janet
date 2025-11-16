@@ -2,6 +2,7 @@
 
 (import spork/json)
 (import spork/http)
+(import ./prompt)
 
 (defn parse-args
   ``Parse command line arguments with flags.
@@ -9,16 +10,18 @@
   Supports:
   - --source, -s: Source language (default: Korean)
   - --target, -t: Target language (default: English)
+  - --temperature, -T: Temperature for generation (default: 0.3)
   - First positional argument: text to translate
 
   Returns:
-  A struct with :text, :source, and :target keys.
+  A struct with :text, :source, :target, and :temperature keys.
   ``
   [args]
 
   (var text nil)
   (var source "Korean")
   (var target "English")
+  (var temperature prompt/DEFAULT_TEMPERATURE)
   (var i 0)
 
   (while (< i (length args))
@@ -38,6 +41,16 @@
         (when (< i (length args))
           (set target (get args i))))
 
+      # Temperature flag
+      (or (= arg "--temperature") (= arg "-T"))
+      (do
+        (set i (+ i 1))
+        (when (< i (length args))
+          (def temp-str (get args i))
+          (def parsed-temp (scan-number temp-str))
+          (when parsed-temp
+            (set temperature parsed-temp))))
+
       # Positional argument (text)
       (nil? text)
       (set text arg)
@@ -50,7 +63,7 @@
 
     (set i (+ i 1)))
 
-  {:text text :source source :target target})
+  {:text text :source source :target target :temperature temperature})
 
 (defn make-groq-request
   ``Send a translation request to Groq API using the compound-mini model.
@@ -58,23 +71,27 @@
   Arguments:
   - text: The text string to translate
   - api-key: Groq API key for authentication
-  - source-lang: Source language (default: "Korean")
-  - target-lang: Target language (default: "English")
+  - source-lang: Source language
+  - target-lang: Target language
+  - temperature: Temperature for generation (0.0-2.0)
 
   Returns:
   The translated text as a string, or nil if the request fails.
 
   Example:
-    (make-groq-request "Hello world" "your-api-key" "English" "Korean")
+    (make-groq-request "Hello world" "your-api-key" "English" "Korean" 0.3)
   ``
-  [text api-key source-lang target-lang]
+  [text api-key source-lang target-lang temperature]
 
-  # Construct API payload with explicit source and target
-  (def prompt (string "Translate from " source-lang " to " target-lang ": " text))
+  # Validate and build messages using prompt module
+  (def validated-temp (prompt/validate-temperature temperature))
+  (def messages (prompt/build-messages text source-lang target-lang))
+
+  # Construct API payload
   (def payload
     {:model "compound-mini"
-     :messages [{:role "user"
-                 :content prompt}]})
+     :messages messages
+     :temperature validated-temp})
 
   # Encode to JSON
   (def json-body (json/encode payload))
@@ -108,14 +125,15 @@
   (eprint "Usage: janet src/main.janet <text> [options]")
   (eprint "")
   (eprint "Options:")
-  (eprint "  -s, --source <lang>   Source language (default: Korean)")
-  (eprint "  -t, --target <lang>   Target language (default: English)")
+  (eprint "  -s, --source <lang>      Source language (default: Korean)")
+  (eprint "  -t, --target <lang>      Target language (default: English)")
+  (eprint "  -T, --temperature <num>  Temperature 0.0-2.0 (default: 0.3)")
   (eprint "")
   (eprint "Examples:")
   (eprint "  janet src/main.janet \"안녕하세요\"")
   (eprint "  janet src/main.janet \"안녕하세요\" --target English")
-  (eprint "  janet src/main.janet \"Hello\" --source English --target Korean")
-  (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean"))
+  (eprint "  janet src/main.janet \"Hello\" -s English -t Korean")
+  (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5"))
 
 (defn main
   ``CLI entry point for the translation tool.
@@ -143,6 +161,7 @@
   (def text (parsed :text))
   (def source (parsed :source))
   (def target (parsed :target))
+  (def temperature (parsed :temperature))
 
   # Validate text
   (unless text
@@ -153,7 +172,8 @@
 
   # Execute translation
   (print "Translating from " source " to " target "...")
-  (def result (make-groq-request text api-key source target))
+  (print "Temperature: " temperature)
+  (def result (make-groq-request text api-key source target temperature))
 
   (if result
     (do
