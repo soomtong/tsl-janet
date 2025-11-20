@@ -9,6 +9,7 @@
   (eprint "  -s, --source <lang>      Source language (default: Korean)")
   (eprint "  -t, --target <lang>      Target language (default: English)")
   (eprint "  -T, --temperature <num>  Temperature 0.0-2.0 (default: 0.3)")
+  (eprint "  -p, --persona <name>     Persona (default, programming, research, review)")
   (eprint "  --no-copy                Disable automatic clipboard copy")
   (eprint "  --init                   Run configuration wizard")
   (eprint "")
@@ -17,6 +18,7 @@
   (eprint "  janet src/main.janet \"안녕하세요\" --target English")
   (eprint "  janet src/main.janet \"Hello\" -s English -t Korean")
   (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5")
+  (eprint "  janet src/main.janet \"코드 작성\" --persona programming")
   (eprint "  janet src/main.janet \"Hello\" --no-copy")
   (eprint "  janet src/main.janet --init"))
 
@@ -33,15 +35,16 @@
 
 (defn parse-args
   ``Parse command line arguments and merge with configuration.
-  
+
   Priority: CLI Flags > Config File > Defaults
   ``
   [args config]
-  
+
   # Start with values from config (which already contains defaults)
   (var text nil)
   (var source (get config :source))
   (var target (get config :target))
+  (var persona (get config :persona))
   (var temperature (get config :temperature))
   (var copy (get config :copy))
   (var init-mode false)
@@ -63,6 +66,13 @@
         (set i (+ i 1))
         (when (< i (length args))
           (set target (get args i))))
+
+      # Persona flag
+      (or (= arg "--persona") (= arg "-p"))
+      (do
+        (set i (+ i 1))
+        (when (< i (length args))
+          (set persona (get args i))))
 
       # Temperature flag
       (or (= arg "--temperature") (= arg "-T"))
@@ -97,6 +107,7 @@
   {:text text
    :source source
    :target target
+   :persona persona
    :temperature temperature
    :copy copy
    :init init-mode

@@ -7,6 +7,7 @@
    :model "groq/compound-mini"
    :source "Korean"
    :target "English"
+   :persona "default"
    :temperature prompt/DEFAULT_TEMPERATURE
    :copy true})
 

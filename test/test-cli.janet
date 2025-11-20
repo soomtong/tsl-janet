@@ -7,6 +7,7 @@
    :model "groq/compound-mini"
    :source "Korean"
    :target "English"
+   :persona "default"
    :temperature 0.3
    :copy true})
 
@@ -79,6 +80,13 @@
   (assert (= (res3 :copy) false) "Copy should be false")
   (assert (= (res3 :text) "world") "Text should be world")
 
+  # Test with persona flag included
+  (def res4 (cli/parse-args @["-s" "Chinese" "-p" "programming" "-T" "0.5" "code"] conf))
+  (assert (= (res4 :source) "Chinese") "Source should be Chinese")
+  (assert (= (res4 :persona) "programming") "Persona should be programming")
+  (assert (= (res4 :temperature) 0.5) "Temperature should be 0.5")
+  (assert (= (res4 :text) "code") "Text should be code")
+
   (print "Flag combinations test passed!"))
 
 (defn test-text-position []
@@ -138,6 +146,7 @@
      :model "gpt-4"
      :source "Japanese"
      :target "Spanish"
+     :persona "research"
      :temperature 0.8
      :copy false})
 
@@ -150,6 +159,7 @@
   (def res2 (cli/parse-args @["hello"] custom-conf))
   (assert (= (res2 :source) "Japanese") "Config source should be used")
   (assert (= (res2 :target) "Spanish") "Config target should be used")
+  (assert (= (res2 :persona) "research") "Config persona should be used")
   (assert (= (res2 :temperature) 0.8) "Config temperature should be used")
   (assert (= (res2 :copy) false) "Config copy should be used")
 
@@ -171,6 +181,7 @@
   (assert (has-key? res :text) "Result should have :text field")
   (assert (has-key? res :source) "Result should have :source field")
   (assert (has-key? res :target) "Result should have :target field")
+  (assert (has-key? res :persona) "Result should have :persona field")
   (assert (has-key? res :temperature) "Result should have :temperature field")
   (assert (has-key? res :copy) "Result should have :copy field")
   (assert (has-key? res :init) "Result should have :init field")
@@ -182,6 +193,7 @@
   (assert (or (string? (res :text)) (nil? (res :text))) "Text should be string or nil")
   (assert (string? (res :source)) "Source should be string")
   (assert (string? (res :target)) "Target should be string")
+  (assert (string? (res :persona)) "Persona should be string")
   (assert (number? (res :temperature)) "Temperature should be number")
   (assert (= (type (res :copy)) :boolean) "Copy should be boolean")
   (assert (= (type (res :init)) :boolean) "Init should be boolean")
@@ -255,6 +267,7 @@
      :model "groq/compound-mini"
      :source "Korean"
      :target "English"
+     :persona "default"
      :temperature 0.3
      :copy false})
 
@@ -283,6 +296,46 @@
 
   (print "--init flag variations test passed!"))
 
+(defn test-persona-flag []
+  (print "\nTesting --persona flag behavior...")
+  (def conf (make-test-config))
+
+  # Test 1: Default should have persona="default"
+  (def res1 (cli/parse-args @["hello"] conf))
+  (assert (= (res1 :persona) "default") "Default persona should be 'default'")
+
+  # Test 2: --persona programming
+  (def res2 (cli/parse-args @["--persona" "programming" "hello"] conf))
+  (assert (= (res2 :persona) "programming") "--persona should set persona")
+
+  # Test 3: -p short form
+  (def res3 (cli/parse-args @["-p" "research" "hello"] conf))
+  (assert (= (res3 :persona) "research") "-p flag should set persona")
+
+  # Test 4: Persona with other flags
+  (def res4 (cli/parse-args @["-s" "English" "--persona" "review" "test"] conf))
+  (assert (= (res4 :persona) "review") "Persona should work with other flags")
+  (assert (= (res4 :source) "English") "Other flags should still work")
+
+  # Test 5: Config with different persona
+  (def conf-prog
+    {:vendor "groq"
+     :model "groq/compound-mini"
+     :source "Korean"
+     :target "English"
+     :persona "programming"
+     :temperature 0.3
+     :copy true})
+
+  (def res5 (cli/parse-args @["hello"] conf-prog))
+  (assert (= (res5 :persona) "programming") "Config persona should be used")
+
+  # Test 6: CLI overrides config persona
+  (def res6 (cli/parse-args @["--persona" "research" "hello"] conf-prog))
+  (assert (= (res6 :persona) "research") "CLI persona should override config")
+
+  (print "Persona flag test passed!"))
+
 (defn main [&]
   (print "=== Running CLI Module Tests ===\n")
   (test-short-flags)
@@ -296,4 +349,5 @@
   (test-print-functions)
   (test-no-copy-flag)
   (test-init-flag-variations)
+  (test-persona-flag)
   (print "\n=== All CLI tests passed! ==="))

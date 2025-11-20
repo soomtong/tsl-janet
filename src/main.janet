@@ -16,18 +16,19 @@
   - source-lang: Source language
   - target-lang: Target language
   - temperature: Temperature for generation (0.0-2.0)
+  - persona: Optional persona keyword (default: :default)
 
   Returns:
   The translated text as a string, or nil if the request fails.
 
   Example:
-    (make-groq-request "Hello world" "your-api-key" "English" "Korean" 0.3)
+    (make-groq-request "Hello world" "your-api-key" "English" "Korean" 0.3 "programming")
   ``
-  [text api-key source-lang target-lang temperature]
+  [text api-key source-lang target-lang temperature &opt persona]
 
   # Validate and build messages using prompt module
   (def validated-temp (prompt/validate-temperature temperature))
-  (def messages (prompt/build-messages text source-lang target-lang))
+  (def messages (prompt/build-messages text source-lang target-lang persona))
 
   # Construct API payload
   (def payload
@@ -68,7 +69,7 @@
 
 (defn main [& args]
   ``CLI entry point for the translation tool.
-  
+
   Uses src/config.janet for configuration and src/cli.janet for argument parsing.
   ``
   # Get all command line args dynamically for consistency
@@ -103,6 +104,7 @@
   (def text (parsed :text))
   (def source (parsed :source))
   (def target (parsed :target))
+  (def persona (parsed :persona))
   (def temperature (parsed :temperature))
   (def copy (parsed :copy))
   (def api-key (parsed :api-key))
@@ -129,10 +131,10 @@
 
   # Execute translation
   (print "Translating from " source " to " target "...")
-  # Only print temp if it's different from default to reduce noise, or always print? Existing behavior printed it.
   (print "Temperature: " temperature)
-  
-  (def result (make-groq-request text api-key source target temperature))
+  (print "Persona: " persona)
+
+  (def result (make-groq-request text api-key source target temperature persona))
 
   (if result
     (do

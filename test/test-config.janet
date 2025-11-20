@@ -54,6 +54,7 @@
   (assert (has-key? config/default-config :model) "default-config should have :model")
   (assert (has-key? config/default-config :source) "default-config should have :source")
   (assert (has-key? config/default-config :target) "default-config should have :target")
+  (assert (has-key? config/default-config :persona) "default-config should have :persona")
   (assert (has-key? config/default-config :temperature) "default-config should have :temperature")
   (assert (has-key? config/default-config :copy) "default-config should have :copy")
 
@@ -62,6 +63,7 @@
   (assert (= (config/default-config :model) "groq/compound-mini") "Default model should be groq/compound-mini")
   (assert (= (config/default-config :source) "Korean") "Default source should be Korean")
   (assert (= (config/default-config :target) "English") "Default target should be English")
+  (assert (= (config/default-config :persona) "default") "Default persona should be default")
   (assert (= (config/default-config :temperature) 0.3) "Default temperature should be 0.3")
   (assert (= (config/default-config :copy) true) "Default copy should be true")
 
@@ -70,6 +72,7 @@
   (assert (string? (config/default-config :model)) "model should be string")
   (assert (string? (config/default-config :source)) "source should be string")
   (assert (string? (config/default-config :target)) "target should be string")
+  (assert (string? (config/default-config :persona)) "persona should be string")
   (assert (number? (config/default-config :temperature)) "temperature should be number")
   (assert (= (type (config/default-config :copy)) :boolean) "copy should be boolean")
 

@@ -1,5 +1,5 @@
 (import ./config)
-(import ./prompt)
+(import ./prompt :as prompt-mod)
 
 # API Key environment variable to vendor mapping
 (def api-key-mapping
@@ -253,7 +253,28 @@
   # Step 5: Target language
   (def target-lang (prompt-input "Target language" "English"))
 
-  # Step 6: Temperature
+  # Step 6: Persona selection
+  (print "")
+  (def persona-keys (prompt-mod/get-persona-list))
+  (def persona-choices
+    (map |(string (get prompt-mod/persona-titles $) " (" $ ")") persona-keys))
+
+  # Find default persona index
+  (def default-persona-idx
+    (or (find-index |(= $ :default) persona-keys) 0))
+
+  (def persona-idx
+    (prompt-choice
+      "Select persona:"
+      persona-choices
+      default-persona-idx))
+
+  (def selected-persona
+    (if persona-idx
+      (string (get persona-keys persona-idx))
+      "default"))
+
+  # Step 7: Temperature
   (print "")
   (def temp-input (prompt-input "Temperature (0.0-2.0)" "0.3"))
   (def temperature
@@ -262,11 +283,11 @@
         parsed
         0.3)))
 
-  # Step 7: Clipboard copy
+  # Step 8: Clipboard copy
   (print "")
   (def copy-enabled (prompt-yes-no "Enable clipboard copy by default?" true))
 
-  # Step 8: Save API key (optional)
+  # Step 9: Save API key (optional)
   (print "")
   (def save-api-key (prompt-yes-no "Save API key to config file?" false))
 
@@ -285,6 +306,7 @@
      :model selected-model
      :source source-lang
      :target target-lang
+     :persona selected-persona
      :temperature temperature
      :copy copy-enabled})
 
@@ -307,6 +329,7 @@
       (printf "Source:       %s" source-lang)
       (printf "Target:       %s" target-lang)
       (printf "Temperature:  %.1f" temperature)
+      (printf "Persona:      %s" selected-persona)
       (printf "Clipboard:    %s" (if copy-enabled "enabled" "disabled"))
       (when api-key-value
         (printf "API Key:      saved"))
