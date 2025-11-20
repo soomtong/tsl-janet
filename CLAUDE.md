@@ -20,6 +20,7 @@ jpm test
 # - test/test-config.janet
 # - test/test-init.janet
 # - test/test-prompt.janet
+# - test/test-request.janet
 # - test/test-vendor.janet
 # - test/test-integration.janet (full workflow tests)
 
@@ -104,12 +105,9 @@ The project is organized into modular components with clear separation of concer
 ### Module Structure
 
 **Core Modules:**
-- `src/main.janet` - CLI entry point and translation execution
-  - `make-llm-request` - Multi-vendor API communication with retry logic and error handling
-  - `parse-http-response` - Parses HTTP response with status code extraction
-  - `handle-http-error` - Error handling for various HTTP status codes (401/403/429/5xx)
+- `src/main.janet` - CLI entry point and workflow orchestration
   - `show-config` / `show-prompt` / `show-persona` - Configuration display utilities
-  - `main` - Entry point with argument parsing and workflow orchestration
+  - `main` - Entry point with argument parsing and translation execution
 
 - `src/cli.janet` - Command-line argument parsing
   - `parse-args` - Parses CLI flags and merges with config (priority: CLI > Config > Defaults)
@@ -135,6 +133,11 @@ The project is organized into modular components with clear separation of concer
   - `get-system-prompt` - Returns translation guidelines with persona customization
   - `build-messages` - Constructs API message array
   - `validate-temperature` / `validate-persona` - Input validation
+
+- `src/request.janet` - HTTP request layer with retry logic
+  - `parse-http-response` - Parses HTTP response with status code extraction
+  - `handle-http-error` - Error handling for various HTTP status codes (401/403/429/5xx)
+  - `make-llm-request` - Multi-vendor API communication with exponential backoff retry (max 3 attempts)
 
 - `src/vendor.janet` - Multi-vendor API abstraction layer
   - `vendor-configs` - Configuration map for 8 LLM vendors (base URLs, endpoints, auth types, API formats)
@@ -203,18 +206,20 @@ Integration tests use temporary directories and environment cleanup to avoid sid
 ### Module Dependencies
 
 ```
-main.janet
+main.janet (CLI entry point)
 ├── cli.janet (argument parsing)
 ├── config.janet (config file I/O)
 │   └── prompt.janet (for DEFAULT_TEMPERATURE)
 ├── init.janet (initialization wizard)
 │   └── config.janet
 │   └── prompt.janet
-├── prompt.janet (prompt generation)
+├── request.janet (HTTP request layer)
+│   ├── prompt.janet (validate-temperature, build-messages)
+│   └── vendor.janet (API format conversion)
 └── vendor.janet (multi-vendor API abstraction)
 ```
 
-Note: `main.janet` imports all modules and orchestrates the workflow. The `vendor.janet` module is self-contained with no dependencies. Other modules have minimal cross-dependencies.
+Note: `main.janet` imports all modules and orchestrates the workflow. The `request.janet` module handles all HTTP communication with retry logic. The `vendor.janet` module is self-contained with no dependencies. Other modules have minimal cross-dependencies.
 
 ### Documentation Standards
 All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/documentation.html):
