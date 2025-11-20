@@ -142,7 +142,9 @@
   (try
     (do
       (def json-str (json/encode config))
-      (spit config-path json-str)
+      # Use file/open and file/write instead of spit
+      (with [f (file/open config-path :w)]
+        (file/write f json-str))
       (print "Configuration saved to: " config-path)
       true)
     ([err]

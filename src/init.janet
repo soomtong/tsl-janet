@@ -351,13 +351,13 @@
 
   # Build configuration
   (var new-config
-    {:vendor (string selected-vendor)
-     :model selected-model
-     :source source-lang
-     :target target-lang
-     :persona selected-persona
-     :temperature temperature
-     :copy copy-enabled})
+    @{:vendor (string selected-vendor)
+      :model selected-model
+      :source source-lang
+      :target target-lang
+      :persona selected-persona
+      :temperature temperature
+      :copy copy-enabled})
 
   (when api-key-value
     (put new-config :api-key api-key-value))

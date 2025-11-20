@@ -417,6 +417,71 @@
   (cleanup-test-env)
   (print "Empty config file test passed!"))
 
+(defn test-vendor-env-mapping []
+  (print "\nTesting vendor-specific environment variable mapping...")
+  (setup-test-env)
+
+  # Test each vendor's environment variable mapping
+  (def vendor-env-tests
+    [["groq" "GROQ_API_KEY" "groq-test-key"]
+     ["openai" "OPENAI_API_KEY" "openai-test-key"]
+     ["anthropic" "ANTHROPIC_API_KEY" "anthropic-test-key"]
+     ["deepseek" "DEEPSEEK_API_KEY" "deepseek-test-key"]
+     ["gemini" "GEMINI_KEY" "gemini-test-key"]
+     ["mistral" "MISTRAL_API_KEY" "mistral-test-key"]
+     ["openrouter" "OPENROUTER_API_KEY" "openrouter-test-key"]
+     ["cerebras" "CEREBRAS_API_KEY" "cerebras-test-key"]])
+
+  (each [vendor env-var expected-key] vendor-env-tests
+    # Set this vendor's environment variable
+    (os/setenv env-var expected-key)
+
+    # Create config for this vendor (no api-key in config)
+    (def conf {:vendor vendor})
+
+    # Get API key - should use environment variable
+    (def key (config/get-api-key conf))
+
+    (assert (= key expected-key)
+            (string/format "%s should map to %s and return correct key" vendor env-var))
+
+    # Clear this env var for next iteration
+    (os/setenv env-var nil))
+
+  (cleanup-test-env)
+  (print "Vendor environment variable mapping test passed!"))
+
+(defn test-multi-vendor-env-priority []
+  (print "\nTesting environment priority with multiple vendors...")
+  (setup-test-env)
+
+  # Set multiple environment variables
+  (os/setenv "GROQ_API_KEY" "groq-env-key")
+  (os/setenv "OPENAI_API_KEY" "openai-env-key")
+  (os/setenv "ANTHROPIC_API_KEY" "anthropic-env-key")
+
+  # Test that each vendor gets its own env var
+  (def groq-conf {:vendor "groq" :api-key "groq-config-key"})
+  (def groq-key (config/get-api-key groq-conf))
+  (assert (= groq-key "groq-env-key") "Groq should use GROQ_API_KEY from env")
+
+  (def openai-conf {:vendor "openai" :api-key "openai-config-key"})
+  (def openai-key (config/get-api-key openai-conf))
+  (assert (= openai-key "openai-env-key") "OpenAI should use OPENAI_API_KEY from env")
+
+  (def anthropic-conf {:vendor "anthropic" :api-key "anthropic-config-key"})
+  (def anthropic-key (config/get-api-key anthropic-conf))
+  (assert (= anthropic-key "anthropic-env-key") "Anthropic should use ANTHROPIC_API_KEY from env")
+
+  # Test vendor with no env var - should fall back to config
+  (os/setenv "DEEPSEEK_API_KEY" nil)
+  (def deepseek-conf {:vendor "deepseek" :api-key "deepseek-config-key"})
+  (def deepseek-key (config/get-api-key deepseek-conf))
+  (assert (= deepseek-key "deepseek-config-key") "DeepSeek should use config key when env not set")
+
+  (cleanup-test-env)
+  (print "Multi-vendor environment priority test passed!"))
+
 (defn main [&]
   (print "=== Running Config Module Tests ===\n")
   (test-default-config)
@@ -434,4 +499,6 @@
   (test-xdg-config-home)
   (test-config-directory-creation)
   (test-empty-config-file)
+  (test-vendor-env-mapping)
+  (test-multi-vendor-env-priority)
   (print "\n=== All Config tests passed! ==="))

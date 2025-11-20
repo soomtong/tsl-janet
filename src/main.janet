@@ -7,7 +7,7 @@
 (import ./cli)
 (import ./init :as init-mod)
 
-(defn- parse-http-response
+(defn parse-http-response
   ``Parse HTTP response with status code.
 
   Expects response in format: "BODY\nSTATUS_CODE"
@@ -27,7 +27,7 @@
     (def body (string/join (slice lines 0 -2) "\n"))
     {:body body :status-code status-code}))
 
-(defn- handle-http-error
+(defn handle-http-error
   ``Handle HTTP error with appropriate message.
 
   Arguments:

@@ -144,5 +144,104 @@
   (not (nil? (string/find "Bearer" (get headers "Authorization"))))
   "Authorization header should contain Bearer token")
 
+# Import main module for Phase 5 exception handling tests
+(import ../src/main)
+
+# Test: parse-http-response with valid response
+(def valid-response "{\n\"status\": \"ok\"\n}\n200")
+(def parsed-valid (main/parse-http-response valid-response))
+
+(test/assert
+  (not (nil? parsed-valid))
+  "parse-http-response should parse valid response")
+
+(test/assert
+  (= (get parsed-valid :status-code) 200)
+  "Should extract status code 200")
+
+(test/assert
+  (= (get parsed-valid :body) "{\n\"status\": \"ok\"\n}")
+  "Should extract body correctly")
+
+# Test: parse-http-response with different status codes
+(def response-401 "{\"error\": \"unauthorized\"}\n401")
+(def parsed-401 (main/parse-http-response response-401))
+
+(test/assert
+  (= (get parsed-401 :status-code) 401)
+  "Should parse 401 status code")
+
+(def response-429 "{\"error\": \"rate limit\"}\n429")
+(def parsed-429 (main/parse-http-response response-429))
+
+(test/assert
+  (= (get parsed-429 :status-code) 429)
+  "Should parse 429 status code")
+
+(def response-500 "{\"error\": \"server error\"}\n500")
+(def parsed-500 (main/parse-http-response response-500))
+
+(test/assert
+  (= (get parsed-500 :status-code) 500)
+  "Should parse 500 status code")
+
+# Test: parse-http-response with multiline body
+(def multiline-response "line1\nline2\nline3\n200")
+(def parsed-multiline (main/parse-http-response multiline-response))
+
+(test/assert
+  (= (get parsed-multiline :status-code) 200)
+  "Should parse multiline response status code")
+
+(test/assert
+  (= (get parsed-multiline :body) "line1\nline2\nline3")
+  "Should preserve newlines in body")
+
+# Test: parse-http-response with invalid response (too short)
+(def invalid-response "200")
+(def parsed-invalid (main/parse-http-response invalid-response))
+
+(test/assert
+  (nil? parsed-invalid)
+  "Should return nil for invalid response format")
+
+# Test: handle-http-error returns correct error types
+# Note: handle-http-error prints to stderr, so we only check return values
+
+(def error-401-result (main/handle-http-error 401 "{}"))
+(test/assert
+  (nil? error-401-result)
+  "401 error should return nil (no retry)")
+
+(def error-403-result (main/handle-http-error 403 "{}"))
+(test/assert
+  (nil? error-403-result)
+  "403 error should return nil (no retry)")
+
+(def error-429-result (main/handle-http-error 429 "{}"))
+(test/assert
+  (nil? error-429-result)
+  "429 error should return nil (no retry)")
+
+(def error-500-result (main/handle-http-error 500 "{}"))
+(test/assert
+  (= error-500-result :retry)
+  "500 error should return :retry")
+
+(def error-502-result (main/handle-http-error 502 "{}"))
+(test/assert
+  (= error-502-result :retry)
+  "502 error should return :retry")
+
+(def error-503-result (main/handle-http-error 503 "{}"))
+(test/assert
+  (= error-503-result :retry)
+  "503 error should return :retry")
+
+(def error-404-result (main/handle-http-error 404 "not found"))
+(test/assert
+  (nil? error-404-result)
+  "404 error should return nil (no retry)")
+
 # End test suite and print results
 (test/end-suite)

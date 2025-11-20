@@ -1,4 +1,5 @@
 (import ../src/init)
+(import ../src/config)
 
 # Backup environment variables
 (var original-env @{})
@@ -227,6 +228,113 @@
   (restore-env)
   (print "Specific API key detection test passed!"))
 
+(defn test-prompt-api-key-exists []
+  (print "\nTesting prompt-api-key function exists...")
+
+  # Check that prompt-api-key function exists
+  (assert (function? init/prompt-api-key) "prompt-api-key should be a function")
+
+  # Note: Cannot easily test interactive input, but we verify:
+  # - Function exists and is callable
+  # - Has proper docstring
+  (def docstring (get (dyn 'init/prompt-api-key) :doc))
+  (assert docstring "prompt-api-key should have documentation")
+  (assert (string/find "validation" docstring) "Documentation should mention validation")
+  (assert (string/find "retry" docstring) "Documentation should mention retry")
+
+  (print "prompt-api-key function exists test passed!"))
+
+(defn test-config-building-with-table []
+  (print "\nTesting config building with table (mutable)...")
+
+  # Simulate init wizard config creation
+  # This tests the fix for struct -> table change
+
+  # Create config as table (mutable)
+  (var test-config
+    @{:vendor "groq"
+      :model "groq/compound-mini"
+      :source "Korean"
+      :target "English"
+      :persona "default"
+      :temperature 0.3
+      :copy true})
+
+  # Verify it's a table (not struct)
+  (assert (table? test-config) "Config should be a table")
+  (assert (not (struct? test-config)) "Config should not be a struct")
+
+  # Test that we can add api-key using put (this would fail with struct)
+  (def api-key-value "test-api-key-12345678901234567890")
+  (put test-config :api-key api-key-value)
+
+  # Verify api-key was added
+  (assert (= (get test-config :api-key) api-key-value) "API key should be added to config")
+
+  # Verify all original keys are still present
+  (assert (= (get test-config :vendor) "groq") "Vendor should be preserved")
+  (assert (= (get test-config :model) "groq/compound-mini") "Model should be preserved")
+  (assert (= (get test-config :source) "Korean") "Source should be preserved")
+  (assert (= (get test-config :target) "English") "Target should be preserved")
+  (assert (= (get test-config :persona) "default") "Persona should be preserved")
+  (assert (= (get test-config :temperature) 0.3) "Temperature should be preserved")
+  (assert (= (get test-config :copy) true) "Copy should be preserved")
+
+  (print "Config building with table test passed!"))
+
+(defn test-config-save-with-api-key []
+  (print "\nTesting config save with API key...")
+  (backup-env)
+  (clear-api-keys)
+
+  # Set XDG_CONFIG_HOME to temp directory
+  (def test-dir "/tmp/tsl-test-init-save")
+  (os/setenv "XDG_CONFIG_HOME" test-dir)
+
+  # Clean up any existing test directory
+  (try
+    (os/execute ["rm" "-rf" test-dir] :p)
+    ([err] nil))
+
+  # Create config with API key using table
+  (var new-config
+    @{:vendor "groq"
+      :model "groq/compound-mini"
+      :source "Korean"
+      :target "English"
+      :persona "default"
+      :temperature 0.3
+      :copy true})
+
+  # Add API key (simulating init wizard behavior)
+  (def api-key "test-key-1234567890abcdefghij")
+  (put new-config :api-key api-key)
+
+  # Save config using config module
+  (def save-result (config/save-config new-config))
+
+  # Verify save was successful
+  (assert save-result "Config save should succeed")
+
+  # Verify file was created
+  (def config-path (string test-dir "/tsl/config.json"))
+  (assert (os/stat config-path) "Config file should exist")
+
+  # Load and verify saved config
+  (def loaded-config (config/load-config))
+  (assert (= (get loaded-config :vendor) "groq") "Loaded vendor should match")
+  (assert (= (get loaded-config :model) "groq/compound-mini") "Loaded model should match")
+  (assert (= (get loaded-config :api-key) api-key) "Loaded API key should match")
+  (assert (= (get loaded-config :temperature) 0.3) "Loaded temperature should match")
+
+  # Clean up
+  (try
+    (os/execute ["rm" "-rf" test-dir] :p)
+    ([err] nil))
+
+  (restore-env)
+  (print "Config save with API key test passed!"))
+
 (defn main [&]
   (print "=== Running Init Module Tests ===\n")
   (test-api-key-mapping)
@@ -240,4 +348,7 @@
   (test-vendor-consistency)
   (test-common-languages)
   (test-specific-api-key-detection)
+  (test-prompt-api-key-exists)
+  (test-config-building-with-table)
+  (test-config-save-with-api-key)
   (print "\n=== All Init tests passed! ==="))
