@@ -5,6 +5,7 @@
 (import ./prompt)
 (import ./config)
 (import ./cli)
+(import ./init)
 
 (defn make-groq-request
   ``Send a translation request to Groq API using the groq/compound-mini model.
@@ -88,20 +89,9 @@
   # Check if --init flag is present (early check before full parsing)
   (def has-init-flag (some |(= $ "--init") actual-args))
 
-  # If --init is requested, show placeholder and exit
+  # If --init is requested, run initialization wizard
   (when has-init-flag
-    (print "")
-    (print "Initialization wizard will be implemented in Phase 2.")
-    (print "")
-    (print "Current default configuration:")
-    (pp conf)
-    (print "")
-    (print "Configuration file location:")
-    (def config-path
-      (if-let [xdg-config (os/getenv "XDG_CONFIG_HOME")]
-        (string xdg-config "/tsl/config.json")
-        (string (os/getenv "HOME") "/.config/tsl/config.json")))
-    (print config-path)
+    (init/run-init-wizard)
     (os/exit 0))
 
   # If config doesn't exist, suggest initialization
