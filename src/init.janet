@@ -338,7 +338,8 @@
 
   # Step 9: Save API key (optional)
   (print "")
-  (def save-api-key (prompt-yes-no "Save API key to config file?" false))
+  (def has-env-key (get key-map selected-vendor))
+  (def save-api-key (prompt-yes-no "Save API key to config file?" (not has-env-key)))
 
   (var api-key-value nil)
   (when save-api-key
