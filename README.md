@@ -82,6 +82,15 @@ janet src/main.janet "Hello" -s English -t Korean -T 0.7  # 더 창의적
 
 # 클립보드 복사 비활성화
 janet src/main.janet "Hello" --no-copy  # 클립보드에 복사하지 않음
+
+# 페르소나 사용
+janet src/main.janet "코드 작성" --persona programming
+janet src/main.janet "연구 논문" --persona research
+
+# 설정 확인
+janet src/main.janet --show-config      # 현재 설정 출력
+janet src/main.janet --show-prompt      # 현재 프롬프트 출력
+janet src/main.janet --show-persona     # 현재 페르소나 출력
 ```
 
 ### 사용 형식
@@ -100,7 +109,12 @@ janet src/main.janet <텍스트> [옵션]
   - 낮은 값 (0.0-0.3): 더 정확하고 일관적인 번역
   - 중간 값 (0.3-0.7): 균형잡힌 번역
   - 높은 값 (0.7-2.0): 더 창의적이고 다양한 표현
+- `-p, --persona <이름>`: 페르소나 선택 (default, programming, research, review)
 - `--no-copy`: 자동 클립보드 복사 비활성화 (기본값: 활성화)
+- `--init`: 설정 마법사 실행
+- `--show-config`: 현재 설정 정보 출력
+- `--show-prompt`: 현재 프롬프트 템플릿 출력
+- `--show-persona`: 현재 페르소나 정보 출력
 
 ### 예제 출력
 
@@ -245,10 +259,13 @@ tsl-janet/
 ## 향후 계획 (Roadmap)
 
 - [x] 프로덕션급 번역 CLI 도구
+- [x] 설정 파일 지원 (XDG_CONFIG_HOME/tsl/config.json)
+- [x] 초기화 마법사 (--init)
+- [x] 페르소나 시스템
+- [x] 설정 상태 확인 플래그 (--show-config, --show-prompt, --show-persona)
 - [ ] 다중 모델 지원 (llama-3.3-70b-versatile, mixtral 등)
 - [ ] 스트리밍 응답 지원
 - [ ] 대화 히스토리 관리
-- [ ] 설정 파일 지원 (.tslrc)
 - [ ] 일괄 번역 기능
 
 ## 기여 (Contributing)

@@ -12,6 +12,9 @@
   (eprint "  -p, --persona <name>     Persona (default, programming, research, review)")
   (eprint "  --no-copy                Disable automatic clipboard copy")
   (eprint "  --init                   Run configuration wizard")
+  (eprint "  --show-config            Show current configuration")
+  (eprint "  --show-prompt            Show current prompt template")
+  (eprint "  --show-persona           Show current persona")
   (eprint "")
   (eprint "Examples:")
   (eprint "  janet src/main.janet \"안녕하세요\"")
@@ -20,7 +23,10 @@
   (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5")
   (eprint "  janet src/main.janet \"코드 작성\" --persona programming")
   (eprint "  janet src/main.janet \"Hello\" --no-copy")
-  (eprint "  janet src/main.janet --init"))
+  (eprint "  janet src/main.janet --init")
+  (eprint "  janet src/main.janet --show-config")
+  (eprint "  janet src/main.janet --show-prompt")
+  (eprint "  janet src/main.janet --show-persona"))
 
 (defn print-init-suggestion
   ``Print suggestion to run --init if config doesn't exist.``
@@ -48,6 +54,9 @@
   (var temperature (get config :temperature))
   (var copy (get config :copy))
   (var init-mode false)
+  (var show-config false)
+  (var show-prompt false)
+  (var show-persona false)
   (var i 0)
 
   (while (< i (length args))
@@ -92,6 +101,18 @@
       (= arg "--init")
       (set init-mode true)
 
+      # Show-config flag
+      (= arg "--show-config")
+      (set show-config true)
+
+      # Show-prompt flag
+      (= arg "--show-prompt")
+      (set show-prompt true)
+
+      # Show-persona flag
+      (= arg "--show-persona")
+      (set show-persona true)
+
       # Positional argument (text)
       (nil? text)
       (set text arg)
@@ -111,6 +132,9 @@
    :temperature temperature
    :copy copy
    :init init-mode
+   :show-config show-config
+   :show-prompt show-prompt
+   :show-persona show-persona
    :vendor (get config :vendor)
    :model (get config :model)
    :api-key (config/get-api-key config)})
