@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-tsl-janet is a production-ready translation CLI tool built with Janet language using Groq's API. The tool interfaces with Groq's compound-mini model through their OpenAI-compatible endpoint to provide fast, accurate translations. It features a modular architecture with configuration management, persona-based translation, and multi-vendor API support.
+tsl-janet is a production-ready translation CLI tool built with Janet language supporting 8 LLM vendors (Groq, OpenAI, Anthropic, DeepSeek, Gemini, Mistral, OpenRouter, Cerebras). The tool provides a unified interface to multiple LLM providers with vendor-specific API format conversion, automatic authentication handling, and intelligent retry logic. It features a modular architecture with configuration management, persona-based translation, and comprehensive error handling.
 
 ## Development Commands
 
@@ -20,6 +20,7 @@ jpm test
 # - test/test-config.janet
 # - test/test-init.janet
 # - test/test-prompt.janet
+# - test/test-vendor.janet
 # - test/test-integration.janet (full workflow tests)
 
 # Or run individual test files
@@ -56,6 +57,11 @@ janet src/main.janet "연구 논문" -p research
 
 # With clipboard control
 janet src/main.janet "안녕하세요" --no-copy  # Disable automatic clipboard copy
+
+# With vendor and model selection
+janet src/main.janet "Hello" --vendor openai --model gpt-4o-mini
+janet src/main.janet "Hello" -V anthropic -m claude-4-5-haiku-20241022
+janet src/main.janet "Hello" --vendor gemini --model gemini-2.0-flash-exp
 
 # Show configuration
 janet src/main.janet --show-config   # Display current settings
@@ -99,7 +105,9 @@ The project is organized into modular components with clear separation of concer
 
 **Core Modules:**
 - `src/main.janet` - CLI entry point and translation execution
-  - `make-groq-request` - API communication with Groq (OpenAI-compatible endpoint)
+  - `make-llm-request` - Multi-vendor API communication with retry logic and error handling
+  - `parse-http-response` - Parses HTTP response with status code extraction
+  - `handle-http-error` - Error handling for various HTTP status codes (401/403/429/5xx)
   - `show-config` / `show-prompt` / `show-persona` - Configuration display utilities
   - `main` - Entry point with argument parsing and workflow orchestration
 
@@ -127,6 +135,14 @@ The project is organized into modular components with clear separation of concer
   - `get-system-prompt` - Returns translation guidelines with persona customization
   - `build-messages` - Constructs API message array
   - `validate-temperature` / `validate-persona` - Input validation
+
+- `src/vendor.janet` - Multi-vendor API abstraction layer
+  - `vendor-configs` - Configuration map for 8 LLM vendors (base URLs, endpoints, auth types, API formats)
+  - `get-vendor-config` - Retrieves vendor-specific configuration
+  - `build-url` - Constructs vendor-specific API URLs (handles Gemini's model-in-path pattern)
+  - `build-headers` - Builds authentication headers (Bearer, x-api-key, or query-param)
+  - `build-request-body` - Converts messages to vendor-specific format (OpenAI/Anthropic/Gemini)
+  - `parse-response` - Extracts translated text from vendor-specific response formats
 
 ### Persona System
 
@@ -194,10 +210,11 @@ main.janet
 ├── init.janet (initialization wizard)
 │   └── config.janet
 │   └── prompt.janet
-└── prompt.janet (prompt generation)
+├── prompt.janet (prompt generation)
+└── vendor.janet (multi-vendor API abstraction)
 ```
 
-Note: `main.janet` imports all modules and orchestrates the workflow. Other modules have minimal cross-dependencies.
+Note: `main.janet` imports all modules and orchestrates the workflow. The `vendor.janet` module is self-contained with no dependencies. Other modules have minimal cross-dependencies.
 
 ### Documentation Standards
 All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/documentation.html):
@@ -205,20 +222,29 @@ All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/do
 - Document arguments, returns, and examples
 - Example format:
   ```janet
-  (defn make-groq-request
-    ``Send a translation request to Groq API.
+  (defn make-llm-request
+    ``Send a translation request to configured LLM vendor.
+
+    Supports multiple vendors through vendor.janet configuration.
+    Implements retry logic with exponential backoff for network and server errors.
 
     Arguments:
     - text: The text to translate
-    - api-key: Groq API key
+    - api-key: API key for authentication
     - source-lang: Source language
     - target-lang: Target language
     - temperature: Temperature (0.0-2.0)
-    - persona: Optional persona keyword
+    - vendor: Vendor name (string or keyword, e.g., "groq", :openai)
+    - model: Model name (e.g., "groq/compound-mini", "gpt-4o-mini")
+    - persona: Optional persona keyword (default: :default)
 
     Returns:
     Translated text string, or nil on failure.
+
+    Example:
+      (make-llm-request "Hello" "key" "English" "Korean" 0.3 "groq" "groq/compound-mini")
+      (make-llm-request "Hello" "key" "English" "Korean" 0.3 :anthropic "claude-4-5-haiku-20241022")
     ``
-    [text api-key source-lang target-lang temperature &opt persona]
+    [text api-key source-lang target-lang temperature vendor model &opt persona]
     ...)
   ```

@@ -5,6 +5,7 @@
 (import ./prompt)
 (import ./config)
 (import ./cli)
+(import ./vendor)
 (import ./init :as init-mod)
 
 (defn parse-http-response
@@ -84,9 +85,10 @@
       (eprintf "")
       nil)))
 
-(defn make-groq-request
-  ``Send a translation request to Groq API using the groq/compound-mini model.
+(defn make-llm-request
+  ``Send a translation request to configured LLM vendor.
 
+  Supports multiple vendors through vendor.janet configuration.
   Implements retry logic with exponential backoff for network and server errors.
   - Maximum 3 attempts
   - Exponential backoff: 1s, 2s, 4s
@@ -95,31 +97,38 @@
 
   Arguments:
   - text: The text string to translate
-  - api-key: Groq API key for authentication
+  - api-key: API key for authentication
   - source-lang: Source language
   - target-lang: Target language
   - temperature: Temperature for generation (0.0-2.0)
+  - vendor: Vendor name (string or keyword, e.g., "groq", :openai)
+  - model: Model name (e.g., "groq/compound-mini", "gpt-4o-mini")
   - persona: Optional persona keyword (default: :default)
 
   Returns:
   The translated text as a string, or nil if the request fails.
 
   Example:
-    (make-groq-request "Hello world" "your-api-key" "English" "Korean" 0.3 "programming")
+    (make-llm-request "Hello" "key" "English" "Korean" 0.3 "groq" "groq/compound-mini")
+    (make-llm-request "Hello" "key" "English" "Korean" 0.3 :anthropic "claude-4-5-haiku-20241022")
   ``
-  [text api-key source-lang target-lang temperature &opt persona]
+  [text api-key source-lang target-lang temperature vendor model &opt persona]
 
   # Validate and build messages using prompt module
   (def validated-temp (prompt/validate-temperature temperature))
   (def messages (prompt/build-messages text source-lang target-lang persona))
 
-  # Construct API payload
-  (def payload
-    {:model "groq/compound-mini"
-     :messages messages
-     :temperature validated-temp})
+  # Get vendor configuration
+  (def vendor-config (vendor/get-vendor-config vendor))
 
-  # Encode to JSON and ensure it's a string
+  # Build URL and headers using vendor config
+  (def url (vendor/build-url vendor-config model api-key))
+  (def headers (vendor/build-headers vendor-config api-key))
+
+  # Build request body in vendor-specific format
+  (def payload (vendor/build-request-body vendor-config model messages validated-temp))
+
+  # Encode to JSON
   (def json-body (string (json/encode payload)))
 
   # Retry loop with exponential backoff
@@ -140,15 +149,22 @@
       (os/sleep backoff-seconds))
 
     # Make HTTP POST request using curl via spork/sh
+    # Build curl command with dynamic headers
+    (def curl-args
+      @["curl" "-s" "-X" "POST" "-w" "\n%{http_code}" url])
+
+    # Add all headers
+    (each [key val] (pairs headers)
+      (array/push curl-args "-H")
+      (array/push curl-args (string key ": " val)))
+
+    # Add body
+    (array/push curl-args "-d")
+    (array/push curl-args json-body)
+
     (def response
       (try
-        (sh/exec-slurp
-          "curl" "-s" "-X" "POST"
-          "-w" "\n%{http_code}"
-          "https://api.groq.com/openai/v1/chat/completions"
-          "-H" "Content-Type: application/json"
-          "-H" (string "Authorization: Bearer " api-key)
-          "-d" json-body)
+        (sh/exec-slurp ;curl-args)
         ([err]
           (eprint "")
           (eprint "Network Error:")
@@ -183,7 +199,8 @@
                     (set should-retry false)
                     nil)
                   (do
-                    (set result (get-in parsed [:choices 0 :message :content]))
+                    # Use vendor-specific response parsing
+                    (set result (vendor/parse-response vendor-config parsed))
                     (set should-retry false)
                     result)))
               ([err]
@@ -325,8 +342,10 @@
   (def target (parsed :target))
   (def persona (parsed :persona))
   (def temperature (parsed :temperature))
-  (def copy (parsed :copy))
+  (def vendor (parsed :vendor))
+  (def model (parsed :model))
   (def api-key (parsed :api-key))
+  (def copy (parsed :copy))
 
   # Validate API Key
   (unless api-key
@@ -350,10 +369,12 @@
 
   # Execute translation
   (print "Translating from " source " to " target "...")
+  (print "Vendor: " vendor)
+  (print "Model: " model)
   (print "Temperature: " temperature)
   (print "Persona: " persona)
 
-  (def result (make-groq-request text api-key source target temperature persona))
+  (def result (make-llm-request text api-key source target temperature vendor model persona))
 
   (if result
     (do

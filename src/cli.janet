@@ -10,6 +10,8 @@
   (eprint "  -t, --target <lang>      Target language (default: English)")
   (eprint "  -T, --temperature <num>  Temperature 0.0-2.0 (default: 0.3)")
   (eprint "  -p, --persona <name>     Persona (default, programming, research, review)")
+  (eprint "  -V, --vendor <vendor>    LLM vendor (groq, openai, anthropic, etc.)")
+  (eprint "  -m, --model <model>      Model name")
   (eprint "  --no-copy                Disable automatic clipboard copy")
   (eprint "  --init                   Run configuration wizard")
   (eprint "  --show-config            Show current configuration")
@@ -22,6 +24,8 @@
   (eprint "  janet src/main.janet \"Hello\" -s English -t Korean")
   (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5")
   (eprint "  janet src/main.janet \"코드 작성\" --persona programming")
+  (eprint "  janet src/main.janet \"Hello\" -V openai -m gpt-4o-mini")
+  (eprint "  janet src/main.janet \"Hello\" --vendor anthropic --model claude-4-5-haiku-20241022")
   (eprint "  janet src/main.janet \"Hello\" --no-copy")
   (eprint "  janet src/main.janet --init")
   (eprint "  janet src/main.janet --show-config")
@@ -52,6 +56,8 @@
   (var target (get config :target))
   (var persona (get config :persona))
   (var temperature (get config :temperature))
+  (var vendor (get config :vendor))
+  (var model (get config :model))
   (var copy (get config :copy))
   (var init-mode false)
   (var show-config false)
@@ -93,6 +99,20 @@
           (when parsed-temp
             (set temperature parsed-temp))))
 
+      # Vendor flag
+      (or (= arg "--vendor") (= arg "-V"))
+      (do
+        (set i (+ i 1))
+        (when (< i (length args))
+          (set vendor (get args i))))
+
+      # Model flag
+      (or (= arg "--model") (= arg "-m"))
+      (do
+        (set i (+ i 1))
+        (when (< i (length args))
+          (set model (get args i))))
+
       # No-copy flag
       (= arg "--no-copy")
       (set copy false)
@@ -130,11 +150,11 @@
    :target target
    :persona persona
    :temperature temperature
+   :vendor vendor
+   :model model
    :copy copy
    :init init-mode
    :show-config show-config
    :show-prompt show-prompt
    :show-persona show-persona
-   :vendor (get config :vendor)
-   :model (get config :model)
    :api-key (config/get-api-key config)})
