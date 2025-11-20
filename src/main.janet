@@ -118,6 +118,10 @@
     (show-persona parsed)
     (os/exit 0))
 
+  (when (get parsed :help)
+    (cli/print-usage)
+    (os/exit 0))
+
   (def text (parsed :text))
   (def source (parsed :source))
   (def target (parsed :target))

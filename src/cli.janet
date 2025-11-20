@@ -17,6 +17,7 @@
   (eprint "  --show-config            Show current configuration")
   (eprint "  --show-prompt            Show current prompt template")
   (eprint "  --show-persona           Show current persona")
+  (eprint "  -h, --help               Show this help message")
   (eprint "")
   (eprint "Examples:")
   (eprint "  janet src/main.janet \"안녕하세요\"")
@@ -63,6 +64,7 @@
   (var show-config false)
   (var show-prompt false)
   (var show-persona false)
+  (var show-help false)
   (var i 0)
 
   (while (< i (length args))
@@ -133,6 +135,10 @@
       (= arg "--show-persona")
       (set show-persona true)
 
+      # Help flag
+      (or (= arg "--help") (= arg "-h"))
+      (set show-help true)
+
       # Positional argument (text)
       (nil? text)
       (set text arg)
@@ -157,4 +163,5 @@
    :show-config show-config
    :show-prompt show-prompt
    :show-persona show-persona
+   :help show-help
    :api-key (config/get-api-key config)})
