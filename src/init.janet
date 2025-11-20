@@ -196,11 +196,15 @@
       (def vendor-choices
         (map |(get vendor-names $) available-vendors))
 
+      # Find groq in available vendors, default to it if found
+      (def default-idx
+        (or (find-index |(= $ :groq) available-vendors) 0))
+
       (def vendor-idx
         (prompt-choice
           "Available vendors:"
           vendor-choices
-          0))  # Default to first vendor
+          default-idx))  # Default to groq if available, otherwise first vendor
 
       (if vendor-idx
         (do
