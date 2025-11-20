@@ -3,73 +3,8 @@
 (import spork/json)
 (import spork/sh)
 (import ./prompt)
-
-(defn parse-args
-  ``Parse command line arguments with flags.
-
-  Supports:
-  - --source, -s: Source language (default: Korean)
-  - --target, -t: Target language (default: English)
-  - --temperature, -T: Temperature for generation (default: 0.3)
-  - --no-copy: Disable automatic clipboard copy (default: enabled)
-  - First positional argument: text to translate
-
-  Returns:
-  A struct with :text, :source, :target, :temperature, and :copy keys.
-  ``
-  [args]
-
-  (var text nil)
-  (var source "Korean")
-  (var target "English")
-  (var temperature prompt/DEFAULT_TEMPERATURE)
-  (var copy true)
-  (var i 0)
-
-  (while (< i (length args))
-    (def arg (get args i))
-    (cond
-      # Source language flags
-      (or (= arg "--source") (= arg "-s"))
-      (do
-        (set i (+ i 1))
-        (when (< i (length args))
-          (set source (get args i))))
-
-      # Target language flags
-      (or (= arg "--target") (= arg "-t"))
-      (do
-        (set i (+ i 1))
-        (when (< i (length args))
-          (set target (get args i))))
-
-      # Temperature flag
-      (or (= arg "--temperature") (= arg "-T"))
-      (do
-        (set i (+ i 1))
-        (when (< i (length args))
-          (def temp-str (get args i))
-          (def parsed-temp (scan-number temp-str))
-          (when parsed-temp
-            (set temperature parsed-temp))))
-
-      # No-copy flag
-      (= arg "--no-copy")
-      (set copy false)
-
-      # Positional argument (text)
-      (nil? text)
-      (set text arg)
-
-      # Unknown flag or extra argument
-      (string/has-prefix? "--" arg)
-      (do
-        (eprintf "Unknown flag: %s" arg)
-        (os/exit 1)))
-
-    (set i (+ i 1)))
-
-  {:text text :source source :target target :temperature temperature :copy copy})
+(import ./config)
+(import ./cli)
 
 (defn make-groq-request
   ``Send a translation request to Groq API using the groq/compound-mini model.
@@ -130,47 +65,11 @@
         (eprint "Response: " response-body)
         nil))))
 
-(defn print-usage
-  ``Print usage information.``
-  []
-
-  (eprint "Usage: janet src/main.janet <text> [options]")
-  (eprint "")
-  (eprint "Options:")
-  (eprint "  -s, --source <lang>      Source language (default: Korean)")
-  (eprint "  -t, --target <lang>      Target language (default: English)")
-  (eprint "  -T, --temperature <num>  Temperature 0.0-2.0 (default: 0.3)")
-  (eprint "  --no-copy                Disable automatic clipboard copy")
-  (eprint "")
-  (eprint "Examples:")
-  (eprint "  janet src/main.janet \"안녕하세요\"")
-  (eprint "  janet src/main.janet \"안녕하세요\" --target English")
-  (eprint "  janet src/main.janet \"Hello\" -s English -t Korean")
-  (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5")
-  (eprint "  janet src/main.janet \"Hello\" --no-copy"))
-
 (defn main [& args]
   ``CLI entry point for the translation tool.
-
-  Arguments:
-  - args: Command line arguments passed to the script
-
-  Supports flags:
-  - --source, -s: Source language (default: Korean)
-  - --target, -t: Target language (default: English)
-
-  Requires GROQ_API_KEY environment variable to be set.
+  
+  Uses src/config.janet for configuration and src/cli.janet for argument parsing.
   ``
-  # The `args` parameter is unused, but required for the entry point.
-  # We use `(dyn :args)` to get arguments reliably.
-
-  # Check for API key
-  (def api-key (os/getenv "GROQ_API_KEY"))
-  (unless api-key
-    (eprint "Error: GROQ_API_KEY environment variable is not set.")
-    (eprint "Please set it with: export GROQ_API_KEY='your-api-key'")
-    (os/exit 1))
-
   # Get all command line args dynamically for consistency
   (def all-args (dyn :args))
 
@@ -183,24 +82,66 @@
       # Running compiled binary `./tsl ...`, slice first 1
       (tuple/slice all-args 1)))
 
-  # Parse arguments
-  (def parsed (parse-args actual-args))
+  # Load config and parse args
+  (def conf (config/load-config))
+
+  # Check if --init flag is present (early check before full parsing)
+  (def has-init-flag (some |(= $ "--init") actual-args))
+
+  # If --init is requested, show placeholder and exit
+  (when has-init-flag
+    (print "")
+    (print "Initialization wizard will be implemented in Phase 2.")
+    (print "")
+    (print "Current default configuration:")
+    (pp conf)
+    (print "")
+    (print "Configuration file location:")
+    (def config-path
+      (if-let [xdg-config (os/getenv "XDG_CONFIG_HOME")]
+        (string xdg-config "/tsl/config.json")
+        (string (os/getenv "HOME") "/.config/tsl/config.json")))
+    (print config-path)
+    (os/exit 0))
+
+  # If config doesn't exist, suggest initialization
+  (unless (config/config-exists?)
+    (cli/print-init-suggestion))
+
+  (def parsed (cli/parse-args actual-args conf))
+
   (def text (parsed :text))
   (def source (parsed :source))
   (def target (parsed :target))
   (def temperature (parsed :temperature))
   (def copy (parsed :copy))
+  (def api-key (parsed :api-key))
+
+  # Validate API Key
+  (unless api-key
+    (eprint "")
+    (eprint "Error: No API Key found.")
+    (eprint "")
+    (eprint "Please either:")
+    (eprint "  1. Set GROQ_API_KEY environment variable:")
+    (eprint "     export GROQ_API_KEY=\"your-key-here\"")
+    (eprint "  2. Run configuration setup:")
+    (eprint "     janet src/main.janet --init")
+    (eprint "")
+    (os/exit 1))
 
   # Validate text
   (unless text
     (eprint "Error: No text provided to translate.")
     (eprint "")
-    (print-usage)
+    (cli/print-usage)
     (os/exit 1))
 
   # Execute translation
   (print "Translating from " source " to " target "...")
+  # Only print temp if it's different from default to reduce noise, or always print? Existing behavior printed it.
   (print "Temperature: " temperature)
+  
   (def result (make-groq-request text api-key source target temperature))
 
   (if result
