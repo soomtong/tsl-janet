@@ -1,19 +1,20 @@
 # tsl-janet
 
-Janet 언어로 작성된 Groq API 기반 텍스트 번역 CLI 도구
+Janet 언어로 작성된 다중 LLM 벤더 지원 텍스트 번역 CLI 도구
 
-A text translation CLI tool built with Janet language, powered by Groq API.
+A text translation CLI tool built with Janet language, supporting multiple LLM vendors.
 
 ## 프로젝트 개요 (Overview)
 
-`tsl-janet`은 Groq의 compound-mini 모델을 사용하여 텍스트를 번역하는 프로덕션급 CLI 도구입니다. Janet 언어의 간결함과 Groq API의 빠른 응답 속도를 결합했습니다.
+`tsl-janet`은 Groq, OpenAI, Anthropic, Gemini 등 다양한 LLM 벤더를 지원하는 텍스트 번역 CLI 도구입니다. Janet 언어의 간결함과 최신 LLM의 강력한 성능을 결합했습니다.
 
 ## 요구사항 (Requirements)
 
 - [Janet](https://janet-lang.org/) 1.0 이상
 - [JPM](https://github.com/janet-lang/jpm) (Janet Package Manager)
 - [spork](https://github.com/janet-lang/spork) (자동 설치됨)
-- Groq API 키 ([console.groq.com](https://console.groq.com)에서 발급)
+- `curl` (API 요청용, 기본 설치됨)
+- LLM API 키 (Groq, OpenAI, Anthropic, Gemini 등)
 
 ## 빠른 시작 (Quick Start)
 
@@ -46,17 +47,24 @@ jpm install spork
 
 ### 환경 변수 설정
 
-Groq API 키를 환경 변수로 설정합니다:
+사용하려는 벤더의 API 키를 환경 변수로 설정합니다:
 
 ```bash
-export GROQ_API_KEY="your-api-key-here"
+# Groq (기본값)
+export GROQ_API_KEY="your-groq-key"
+
+# 또는 다른 벤더
+export OPENAI_API_KEY="your-openai-key"
+export ANTHROPIC_API_KEY="your-anthropic-key"
+export GEMINI_API_KEY="your-gemini-key"
 ```
 
 영구적으로 설정하려면 `.bashrc`, `.zshrc` 또는 `.env` 파일에 추가:
 
 ```bash
 # ~/.bashrc 또는 ~/.zshrc
-export GROQ_API_KEY="your-api-key-here"
+export GROQ_API_KEY="your-groq-key"
+export OPENAI_API_KEY="your-openai-key"
 ```
 
 ## 사용 방법 (Usage)
@@ -87,10 +95,16 @@ janet src/main.janet "Hello" --no-copy  # 클립보드에 복사하지 않음
 janet src/main.janet "코드 작성" --persona programming
 janet src/main.janet "연구 논문" --persona research
 
+# 벤더 및 모델 지정
+janet src/main.janet "Hello" --vendor openai --model gpt-4o-mini
+janet src/main.janet "Hello" --vendor anthropic --model claude-3-5-sonnet-20241022
+janet src/main.janet "Hello" --vendor gemini --model gemini-1.5-flash
+
 # 설정 확인
 janet src/main.janet --show-config      # 현재 설정 출력
 janet src/main.janet --show-prompt      # 현재 프롬프트 출력
 janet src/main.janet --show-persona     # 현재 페르소나 출력
+
 ```
 
 ### 사용 형식
@@ -109,6 +123,8 @@ janet src/main.janet <텍스트> [옵션]
   - 낮은 값 (0.0-0.3): 더 정확하고 일관적인 번역
   - 중간 값 (0.3-0.7): 균형잡힌 번역
   - 높은 값 (0.7-2.0): 더 창의적이고 다양한 표현
+- `-v, --vendor <이름>`: LLM 벤더 (groq, openai, anthropic, gemini, deepseek, cerebras, openrouter, mistral)
+- `-m, --model <이름>`: 사용할 모델명
 - `-p, --persona <이름>`: 페르소나 선택 (default, programming, research, review)
 - `--no-copy`: 자동 클립보드 복사 비활성화 (기본값: 활성화)
 - `--init`: 설정 마법사 실행
@@ -159,14 +175,19 @@ Hello
 # 클립보드 복사 안 됨
 ```
 
-## API 정보 (API Information)
+## 지원하는 벤더 (Supported Vendors)
 
-- **Provider**: [Groq](https://groq.com)
-- **Base URL**: `https://api.groq.com/openai/v1`
-- **Model**: `groq/compound-mini`
-- **Endpoint**: `/chat/completions` (OpenAI-compatible)
-- **Default Temperature**: 0.3 (optimized for translation accuracy)
-- **System Prompt**: Detailed translation guidelines included
+| Vendor | Env Variable | Default Model |
+|--------|--------------|---------------|
+| **Groq** | `GROQ_API_KEY` | `groq/compound-mini` |
+| **OpenAI** | `OPENAI_API_KEY` | `gpt-4o-mini` |
+| **Anthropic** | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet-20241022` |
+| **Gemini** | `GEMINI_API_KEY` | `gemini-1.5-flash` |
+| **DeepSeek** | `DEEPSEEK_API_KEY` | `deepseek-chat` |
+| **Cerebras** | `CEREBRAS_API_KEY` | `llama3.1-8b` |
+| **OpenRouter** | `OPENROUTER_API_KEY` | `openai/gpt-3.5-turbo` |
+| **Mistral** | `MISTRAL_API_KEY` | `mistral-small-latest` |
+
 
 ## 개발 (Development)
 
@@ -241,18 +262,22 @@ tsl-janet/
 모든 함수는 Janet 공식 [문서화 가이드라인](https://janet-lang.org/docs/documentation.html)을 따릅니다:
 
 ```janet
-(defn make-groq-request
-  ``Send a translation request to Groq API.
+(defn make-llm-request
+  ``Send a translation request to configured LLM vendor.
 
   Arguments:
   - text: The text string to translate
-  - api-key: Groq API key for authentication
-  - target-lang: Target language (default: "Korean")
+  - api-key: API key for authentication
+  - source-lang: Source language
+  - target-lang: Target language
+  - temperature: Temperature for generation (0.0-2.0)
+  - vendor: Vendor name (e.g., "groq", "openai", "anthropic")
+  - model: Model name
 
   Returns:
   The translated text as a string, or nil if fails.
   ``
-  [text api-key &opt target-lang]
+  [text api-key source-lang target-lang temperature vendor model &opt persona]
   ...)
 ```
 
@@ -279,6 +304,8 @@ MIT License
 ## 관련 링크 (Links)
 
 - [Janet Language](https://janet-lang.org/)
-- [Groq API Documentation](https://console.groq.com/docs)
-- [compound-mini Model](https://console.groq.com/docs/compound/systems/compound-mini)
 - [spork Library](https://github.com/janet-lang/spork)
+- [Groq API Documentation](https://console.groq.com/docs)
+- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Anthropic API Documentation](https://docs.anthropic.com)
+- [Google Gemini API Documentation](https://ai.google.dev/docs)
