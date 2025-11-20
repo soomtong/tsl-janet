@@ -7,8 +7,91 @@
 (import ./cli)
 (import ./init :as init-mod)
 
+(defn- parse-http-response
+  ``Parse HTTP response with status code.
+
+  Expects response in format: "BODY\nSTATUS_CODE"
+
+  Arguments:
+  - response: Full HTTP response string
+
+  Returns:
+  Struct with :body and :status-code, or nil on parse failure
+  ``
+  [response]
+
+  (def lines (string/split "\n" response))
+  (when (>= (length lines) 2)
+    (def status-line (last lines))
+    (def status-code (scan-number status-line))
+    (def body (string/join (slice lines 0 -2) "\n"))
+    {:body body :status-code status-code}))
+
+(defn- handle-http-error
+  ``Handle HTTP error with appropriate message.
+
+  Arguments:
+  - status-code: HTTP status code
+  - body: Response body (may contain error details)
+
+  Returns:
+  Error message string
+  ``
+  [status-code body]
+
+  (cond
+    # Authentication errors
+    (or (= status-code 401) (= status-code 403))
+    (do
+      (eprint "")
+      (eprint "Authentication Error (HTTP " status-code ")")
+      (eprint "")
+      (eprint "Your API key is invalid or expired.")
+      (eprint "")
+      (eprint "Please either:")
+      (eprint "  1. Update your environment variable (e.g., GROQ_API_KEY)")
+      (eprint "  2. Run configuration setup: janet src/main.janet --init")
+      (eprint "")
+      nil)
+
+    # Rate limit
+    (= status-code 429)
+    (do
+      (eprint "")
+      (eprint "Rate Limit Error (HTTP 429)")
+      (eprint "")
+      (eprint "You have exceeded the API rate limit.")
+      (eprint "Please wait a few minutes and try again.")
+      (eprint "")
+      nil)
+
+    # Server errors (5xx)
+    (and (>= status-code 500) (< status-code 600))
+    (do
+      (eprintf "")
+      (eprintf "Server Error (HTTP %d)" status-code)
+      (eprintf "")
+      (eprintf "The API server encountered an error.")
+      (eprintf "This is usually temporary. Retrying...")
+      (eprintf "")
+      :retry)
+
+    # Other errors
+    (do
+      (eprintf "")
+      (eprintf "HTTP Error %d" status-code)
+      (eprintf "Response: %s" body)
+      (eprintf "")
+      nil)))
+
 (defn make-groq-request
   ``Send a translation request to Groq API using the groq/compound-mini model.
+
+  Implements retry logic with exponential backoff for network and server errors.
+  - Maximum 3 attempts
+  - Exponential backoff: 1s, 2s, 4s
+  - Retries only on network errors and 5xx status codes
+  - Does not retry on 401/403/429 errors
 
   Arguments:
   - text: The text string to translate
@@ -39,33 +122,93 @@
   # Encode to JSON and ensure it's a string
   (def json-body (string (json/encode payload)))
 
-  # Make HTTP POST request using curl via spork/sh
-  (def response-body
-    (try
-      (sh/exec-slurp
-        "curl" "-s" "-X" "POST"
-        "https://api.groq.com/openai/v1/chat/completions"
-        "-H" "Content-Type: application/json"
-        "-H" (string "Authorization: Bearer " api-key)
-        "-d" json-body)
-      ([err]
-        (eprint "HTTP request failed: " err)
-        nil)))
+  # Retry loop with exponential backoff
+  (def max-attempts 3)
+  (var attempt 0)
+  (var result nil)
+  (var should-retry true)
 
-  # Handle response
-  (when response-body
-    (try
-      (do
-        (def parsed (json/decode response-body true))
-        (if-let [error (get parsed :error)]
-          (do
-            (eprintf "API error: %s" (get error :message))
-            nil)
-          (get-in parsed [:choices 0 :message :content])))
-      ([err]
-        (eprint "Failed to parse API response: " err)
-        (eprint "Response: " response-body)
-        nil))))
+  (while (and should-retry (< attempt max-attempts))
+    (++ attempt)
+
+    # Show retry message
+    (when (> attempt 1)
+      (def backoff-seconds (math/pow 2 (- attempt 2)))
+      (eprintf "Retry attempt %d/%d (waiting %d second%s)..."
+               attempt max-attempts backoff-seconds
+               (if (= backoff-seconds 1) "" "s"))
+      (os/sleep backoff-seconds))
+
+    # Make HTTP POST request using curl via spork/sh
+    (def response
+      (try
+        (sh/exec-slurp
+          "curl" "-s" "-X" "POST"
+          "-w" "\n%{http_code}"
+          "https://api.groq.com/openai/v1/chat/completions"
+          "-H" "Content-Type: application/json"
+          "-H" (string "Authorization: Bearer " api-key)
+          "-d" json-body)
+        ([err]
+          (eprint "")
+          (eprint "Network Error:")
+          (eprint err)
+          (eprint "")
+          (if (< attempt max-attempts)
+            (eprint "Retrying...")
+            (eprint "Maximum retry attempts reached."))
+          nil)))
+
+    # Handle response
+    (when response
+      (def parsed-response (parse-http-response response))
+
+      (if parsed-response
+        (do
+          (def status-code (get parsed-response :status-code))
+          (def body (get parsed-response :body))
+
+          # Check status code
+          (cond
+            # Success
+            (= status-code 200)
+            (try
+              (do
+                (def parsed (json/decode body true))
+                (if-let [error (get parsed :error)]
+                  (do
+                    (eprintf "")
+                    (eprintf "API error: %s" (get error :message))
+                    (eprintf "")
+                    (set should-retry false)
+                    nil)
+                  (do
+                    (set result (get-in parsed [:choices 0 :message :content]))
+                    (set should-retry false)
+                    result)))
+              ([err]
+                (eprint "")
+                (eprint "Failed to parse API response: " err)
+                (eprint "Response body: " body)
+                (eprint "")
+                (set should-retry false)
+                nil))
+
+            # Handle various HTTP errors
+            (do
+              (def error-result (handle-http-error status-code body))
+              (if (= error-result :retry)
+                # Server error, continue retry loop
+                (set should-retry (< attempt max-attempts))
+                # Other errors, stop retrying
+                (set should-retry false)))))
+
+        # Failed to parse response
+        (do
+          (eprint "Failed to parse HTTP response format")
+          (set should-retry false)))))
+
+  result)
 
 (defn show-config
   ``Display current configuration settings.

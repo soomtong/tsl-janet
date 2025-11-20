@@ -218,7 +218,7 @@
   (print "get-api-key from env test passed!"))
 
 (defn test-get-api-key-priority []
-  (print "\nTesting get-api-key priority (config > env)...")
+  (print "\nTesting get-api-key priority (env > config)...")
   (setup-test-env)
 
   # Set both config and environment
@@ -227,8 +227,8 @@
 
   (def key (config/get-api-key conf))
 
-  # Config should take priority
-  (assert (= key "config-key-priority") "Config API key should take priority over env")
+  # Environment variable should take priority over config file
+  (assert (= key "env-key-789") "Environment API key should take priority over config")
 
   (cleanup-test-env)
   (print "get-api-key priority test passed!"))

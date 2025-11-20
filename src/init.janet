@@ -159,6 +159,55 @@
     (or (= input "n") (= input "no")) false
     default-yes))  # Invalid input uses default
 
+(defn prompt-api-key
+  ``Prompt user for API key with validation and retry.
+
+  Validates:
+  - Non-empty value
+  - Minimum length of 20 characters
+
+  Arguments:
+  - vendor-name: Display name of the vendor
+
+  Returns:
+  Valid API key string, or nil if user fails 3 attempts
+
+  Retry:
+  Maximum 3 attempts
+  ``
+  [vendor-name]
+
+  (def max-attempts 3)
+  (var attempt 0)
+  (var valid-key nil)
+
+  (while (and (< attempt max-attempts) (nil? valid-key))
+    (++ attempt)
+
+    (if (> attempt 1)
+      (eprintf "\nAttempt %d/%d:" attempt max-attempts))
+
+    (def input (prompt-input (string "Enter " vendor-name " API key")))
+
+    (cond
+      # Check if empty
+      (= (length input) 0)
+      (eprint "Error: API key cannot be empty.")
+
+      # Check minimum length
+      (< (length input) 20)
+      (eprintf "Error: API key too short (minimum 20 characters, got %d)." (length input))
+
+      # Valid key
+      (set valid-key input)))
+
+  (when (nil? valid-key)
+    (eprint "")
+    (eprint "Failed to get valid API key after 3 attempts.")
+    (eprint "Skipping API key configuration."))
+
+  valid-key)
+
 (defn run-init-wizard
   ``Run the interactive initialization wizard.
 
@@ -298,7 +347,7 @@
       (set api-key-value (os/getenv env-var))
       (do
         (print "")
-        (set api-key-value (prompt-input (string "Enter " vendor-name " API key"))))))
+        (set api-key-value (prompt-api-key vendor-name)))))
 
   # Build configuration
   (var new-config

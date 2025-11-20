@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-tsl-janet is a production-ready translation CLI tool built with Janet language using Groq's API. The tool interfaces with Groq's compound-mini model through their OpenAI-compatible endpoint to provide fast, accurate translations.
+tsl-janet is a production-ready translation CLI tool built with Janet language using Groq's API. The tool interfaces with Groq's compound-mini model through their OpenAI-compatible endpoint to provide fast, accurate translations. It features a modular architecture with configuration management, persona-based translation, and multi-vendor API support.
 
 ## Development Commands
 
@@ -13,29 +13,28 @@ tsl-janet is a production-ready translation CLI tool built with Janet language u
 # Recommended: Run all tests with jpm
 jpm test
 
-# This will automatically run all tests in test/ directory:
-# - test/test-basics.janet (7 tests)
-# - test/test-main.janet (10 tests)
+# This will automatically run all test files:
+# - test/test-basics.janet
+# - test/test-main.janet
+# - test/test-cli.janet
+# - test/test-config.janet
+# - test/test-init.janet
+# - test/test-prompt.janet
+# - test/test-integration.janet (full workflow tests)
 
 # Or run individual test files
 janet test/test-basics.janet
-janet test/test-main.janet
+janet test/test-integration.janet
 
 # Install test dependency (spork) if needed
 jpm deps
 ```
 
-**Expected output:**
-```
-running test/test-basics.janet ...
-test suite test/test-basics.janet finished in 0.000 seconds - 7 of 7 tests passed.
-running test/test-main.janet ...
-test suite test/test-main.janet finished in 0.000 seconds - 10 of 10 tests passed.
-All tests passed.
-```
-
 ### Running the CLI
 ```bash
+# First-time setup (interactive configuration wizard)
+janet src/main.janet --init
+
 # Basic usage with defaults (Korean → English)
 janet src/main.janet "안녕하세요"
 
@@ -51,76 +50,175 @@ janet src/main.janet "Bonjour" -s French -t Korean
 janet src/main.janet "안녕하세요" -T 0.1  # More accurate
 janet src/main.janet "Hello" -s English -t Korean --temperature 0.7  # More creative
 
+# With persona selection
+janet src/main.janet "코드 작성" --persona programming
+janet src/main.janet "연구 논문" -p research
+
 # With clipboard control
 janet src/main.janet "안녕하세요" --no-copy  # Disable automatic clipboard copy
 
-# With environment variable
-GROQ_API_KEY=your-key janet src/main.janet "你好" -s Chinese -t English
+# Show configuration
+janet src/main.janet --show-config   # Display current settings
+janet src/main.janet --show-prompt   # Display system prompt
+janet src/main.janet --show-persona  # Display persona info
 ```
 
-## Environment Setup
+## Configuration System
 
-**Required**: Set `GROQ_API_KEY` environment variable before running:
-```bash
-export GROQ_API_KEY="your-api-key-here"
-```
+### Configuration Priority
+The tool follows this priority order (highest to lowest):
+1. **CLI flags** - Command line arguments override everything
+2. **Config file** - `~/.config/tsl/config.json` (or `$XDG_CONFIG_HOME/tsl/config.json`)
+3. **Environment variables** - `GROQ_API_KEY` and other vendor API keys
+4. **Defaults** - Built-in defaults (Korean → English, temperature 0.3)
 
-Or create a `.env` file (already gitignored).
+### Configuration File Location
+- Uses XDG Base Directory specification
+- Path: `$XDG_CONFIG_HOME/tsl/config.json` or `~/.config/tsl/config.json`
+- Created automatically by `--init` wizard
+- File format: JSON with keys: `vendor`, `model`, `source`, `target`, `persona`, `temperature`, `copy`, `api-key` (optional)
 
-## API Integration Details
+### API Key Management
+Supported vendors and their environment variables:
+- Groq: `GROQ_API_KEY`
+- OpenAI: `OPENAI_API_KEY`
+- Anthropic: `ANTHROPIC_API_KEY`
+- DeepSeek: `DEEPSEEK_API_KEY`
+- Gemini: `GEMINI_KEY`
+- Mistral: `MISTRAL_API_KEY`
+- OpenRouter: `OPENROUTER_API_KEY`
+- Cerebras: `CEREBRAS_API_KEY`
 
-- **Base URL**: `https://api.groq.com/openai/v1`
-- **Model**: `groq/compound-mini`
-- **API Format**: OpenAI-compatible endpoint
-
-## Testing Framework
-
-Uses `spork/test` module with these key functions:
-- `test/start-suite` and `test/end-suite` - Test suite lifecycle
-- `test/assert` - Standard assertions with ✔/✘ output
-- `test/assert-error` and `test/assert-no-error` - Error handling tests
-
-Test structure validates:
-- Environment variable access
-- String operations for prompt handling
-- Data structures for API payloads (structs for JSON)
-- Array operations for message formatting
+API keys can be stored in config file (optional) or environment variables. The `--init` wizard scans for available keys and offers to save them to config.
 
 ## Code Architecture
 
-The project follows a clean, organized structure:
+The project is organized into modular components with clear separation of concerns:
 
-### Source Files
-- `src/main.janet` - Main translation CLI entry point
-  - `parse-args` - Parse command line flags (--source, --target, --temperature, --no-copy)
-  - `make-groq-request` - Handles API calls to Groq with temperature
-  - `print-usage` - Display usage information
-  - `main` - Entry point function with automatic clipboard copy (macOS)
+### Module Structure
 
-- `src/prompt.janet` - Prompt and parameter management module
-  - `DEFAULT_TEMPERATURE` - Constant (0.3 for translation)
-  - `get-system-prompt` - Returns detailed translation guidelines
-  - `build-messages` - Constructs system + user message array
-  - `validate-temperature` - Validates temperature range (0.0-2.0)
+**Core Modules:**
+- `src/main.janet` - CLI entry point and translation execution
+  - `make-groq-request` - API communication with Groq (OpenAI-compatible endpoint)
+  - `show-config` / `show-prompt` / `show-persona` - Configuration display utilities
+  - `main` - Entry point with argument parsing and workflow orchestration
 
-### Test Files
-- `test/test-basics.janet` - Basic functionality tests (7 tests)
-- `test/test-main.janet` - Main translation feature tests (10 tests)
+- `src/cli.janet` - Command-line argument parsing
+  - `parse-args` - Parses CLI flags and merges with config (priority: CLI > Config > Defaults)
+  - `print-usage` - Usage information display
+  - `print-init-suggestion` - Suggests running `--init` for new users
+
+- `src/config.janet` - Configuration file management
+  - `load-config` - Loads config from XDG path, merges with defaults
+  - `save-config` - Saves config to JSON file
+  - `get-api-key` - API key resolution (config file > environment variable)
+  - `config-exists?` - Checks if config file exists
+
+- `src/init.janet` - Interactive initialization wizard
+  - `run-init-wizard` - Guides user through configuration setup
+  - `scan-api-keys` - Scans environment for available API keys
+  - `get-vendor-models` - Returns available models for each vendor
+  - `prompt-input` / `prompt-choice` / `prompt-yes-no` - Interactive input utilities
+
+- `src/prompt.janet` - Prompt templates and persona management
+  - `DEFAULT_TEMPERATURE` - Constant (0.3)
+  - `persona-prompts` - Map of persona-specific instructions
+  - `persona-titles` - Display names for personas
+  - `get-system-prompt` - Returns translation guidelines with persona customization
+  - `build-messages` - Constructs API message array
+  - `validate-temperature` / `validate-persona` - Input validation
+
+### Persona System
+
+Four specialized translation personas available:
+- `:default` - Balanced translations with concise English output
+- `:programming` - Code-focused clarity, highlights tooling/versions
+- `:research` - Formal tone, clarifies research goals, cites assumptions
+- `:review` - Translation with gap analysis and actionable feedback
+
+Each persona modifies the system prompt to produce contextually appropriate translations.
+
+### Test Organization
+
+- `test/test-*.janet` - Unit tests for individual modules
+- `test/test-integration.janet` - Full workflow tests including:
+  - Save → Load → Parse workflow
+  - API key priority chain validation
+  - CLI/Config/Default priority verification
+  - Cross-module interaction scenarios
+  - New user vs. existing user scenarios
+
+Integration tests use temporary directories and environment cleanup to avoid side effects.
 
 ### Key Data Structures
-- API payload format: `{:model "groq/compound-mini" :messages [...] :temperature 0.3}`
-- Messages array: `[{:role "system" :content "..."} {:role "user" :content "..."}]`
-  - System message: Detailed translation guidelines
-  - User message: `"Translate from [source] to [target]: [text]"`
-- Parsed args format: `{:text "..." :source "Korean" :target "English" :temperature 0.3 :copy true}`
-- Default values:
-  - source: Korean
-  - target: English
-  - temperature: 0.3 (optimized for translation accuracy)
-  - copy: true (automatic clipboard copy enabled by default)
+
+```janet
+# Config format (JSON on disk, struct in code)
+{:vendor "groq"
+ :model "groq/compound-mini"
+ :source "Korean"
+ :target "English"
+ :persona "default"
+ :temperature 0.3
+ :copy true
+ :api-key "optional-key-here"}
+
+# Parsed CLI args (merged config + args)
+{:text "안녕하세요"
+ :source "Korean"
+ :target "English"
+ :persona "default"
+ :temperature 0.3
+ :copy true
+ :vendor "groq"
+ :model "groq/compound-mini"
+ :api-key "..."
+ :show-config false
+ :show-prompt false
+ :show-persona false}
+
+# API request payload
+{:model "groq/compound-mini"
+ :messages [{:role "system" :content "..."}
+            {:role "user" :content "Translate from Korean to English: ..."}]
+ :temperature 0.3}
+```
+
+### Module Dependencies
+
+```
+main.janet
+├── cli.janet (argument parsing)
+├── config.janet (config file I/O)
+│   └── prompt.janet (for DEFAULT_TEMPERATURE)
+├── init.janet (initialization wizard)
+│   └── config.janet
+│   └── prompt.janet
+└── prompt.janet (prompt generation)
+```
+
+Note: `main.janet` imports all modules and orchestrates the workflow. Other modules have minimal cross-dependencies.
 
 ### Documentation Standards
 All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/documentation.html):
-- Use backticks (`` ` ``) for multi-line docstrings
-- Document arguments and return values
-- Include usage examples where helpful
+- Use triple backticks (`` ` ``) for multi-line docstrings
+- Document arguments, returns, and examples
+- Example format:
+  ```janet
+  (defn make-groq-request
+    ``Send a translation request to Groq API.
+
+    Arguments:
+    - text: The text to translate
+    - api-key: Groq API key
+    - source-lang: Source language
+    - target-lang: Target language
+    - temperature: Temperature (0.0-2.0)
+    - persona: Optional persona keyword
+
+    Returns:
+    Translated text string, or nil on failure.
+    ``
+    [text api-key source-lang target-lang temperature &opt persona]
+    ...)
+  ```

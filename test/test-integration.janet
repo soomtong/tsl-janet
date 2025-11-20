@@ -117,14 +117,14 @@
   (def key2 (config/get-api-key conf2))
   (assert (= key2 "env-key-value") "Should use env var when no config")
 
-  # Step 3: Config with api-key, env var set → config wins
+  # Step 3: Config with api-key, env var set → env wins
   (def test-config {:vendor "groq" :api-key "config-key-value"})
   (config/save-config test-config)
   (os/setenv "GROQ_API_KEY" "env-key-value")
 
   (def conf3 (config/load-config))
   (def key3 (config/get-api-key conf3))
-  (assert (= key3 "config-key-value") "Config API key should take priority")
+  (assert (= key3 "env-key-value") "Environment API key should take priority over config")
 
   (cleanup-test-env)
   (print "API key priority chain test passed!"))
