@@ -12,6 +12,30 @@ This module provides:
 (import ./prompt)
 (import ./vendor)
 
+# Constants
+(def MAX-RETRY-ATTEMPTS 3)
+(def BACKOFF-BASE 2)
+
+(defn calculate-backoff
+  ``Calculate exponential backoff in seconds.
+
+  Arguments:
+  - attempt: Current attempt number (1-indexed)
+
+  Returns:
+  Backoff time in seconds (0 for first attempt, 1, 2, 4, ...)
+
+  Example:
+    (calculate-backoff 1) # => 0
+    (calculate-backoff 2) # => 1
+    (calculate-backoff 3) # => 2
+    (calculate-backoff 4) # => 4
+  ``
+  [attempt]
+  (if (<= attempt 1)
+    0
+    (math/pow BACKOFF-BASE (- attempt 2))))
+
 (defn handle-http-error
   ``Handle HTTP error with appropriate message.
 
@@ -69,6 +93,66 @@ This module provides:
       (eprintf "")
       nil)))
 
+(defn make-http-request
+  ``Make a single HTTP POST request without retry logic.
+
+  Arguments:
+  - url: API endpoint URL
+  - json-body: JSON-encoded request body
+  - headers: HTTP headers table
+  - attempt: Current attempt number (for logging)
+
+  Returns:
+  Response table from joyframework/http, or nil on network error
+
+  Example:
+    (make-http-request "https://api.example.com" "{...}" {"Authorization" "Bearer key"} 1)
+  ``
+  [url json-body headers attempt]
+  (try
+    (http/post url json-body :headers headers)
+    ([err]
+      (eprint "")
+      (eprint "🌐  Network Error:")
+      (eprint err)
+      (eprint "")
+      (if (< attempt MAX-RETRY-ATTEMPTS)
+        (eprint "🔄  Retrying...")
+        (eprint "❌  Maximum retry attempts reached."))
+      nil)))
+
+(defn handle-success-response
+  ``Handle successful (200) HTTP response.
+
+  Arguments:
+  - body: Response body string
+  - vendor-config: Vendor configuration
+
+  Returns:
+  Parsed response content or nil on error
+
+  Example:
+    (handle-success-response "{\"choices\":[...]}" vendor-config)
+  ``
+  [body vendor-config]
+  (try
+    (do
+      (def parsed (json/decode body true))
+      (if-let [error (get parsed :error)]
+        (do
+          (eprintf "")
+          (eprintf "❌  API error: %s" (get error :message))
+          (eprintf "")
+          nil)
+        # Use vendor-specific response parsing
+        (vendor/parse-response vendor-config parsed)))
+    ([err]
+      (eprint "")
+      (eprint "❌  Failed to parse API response: " err)
+      (eprint "Response body: " body)
+      (eprint "")
+      nil)))
+
 (defn make-llm-request
   ``Send a translation request to configured LLM vendor.
 
@@ -116,35 +200,23 @@ This module provides:
   (def json-body (string (json/encode payload)))
 
   # Retry loop with exponential backoff
-  (def max-attempts 3)
   (var attempt 0)
   (var result nil)
   (var should-retry true)
 
-  (while (and should-retry (< attempt max-attempts))
+  (while (and should-retry (< attempt MAX-RETRY-ATTEMPTS))
     (++ attempt)
 
-    # Show retry message
+    # Show retry message and sleep if this is a retry
     (when (> attempt 1)
-      (def backoff-seconds (math/pow 2 (- attempt 2)))
+      (def backoff-seconds (calculate-backoff attempt))
       (eprintf "🔄  Retry attempt %d/%d (waiting %d second%s)..."
-               attempt max-attempts backoff-seconds
+               attempt MAX-RETRY-ATTEMPTS backoff-seconds
                (if (= backoff-seconds 1) "" "s"))
       (os/sleep backoff-seconds))
 
-    # Make HTTP POST request using joyframework/http
-    (def response
-      (try
-        (http/post url json-body :headers headers)
-        ([err]
-          (eprint "")
-          (eprint "🌐  Network Error:")
-          (eprint err)
-          (eprint "")
-          (if (< attempt max-attempts)
-            (eprint "🔄  Retrying...")
-            (eprint "❌  Maximum retry attempts reached."))
-          nil)))
+    # Make HTTP POST request
+    (def response (make-http-request url json-body headers attempt))
 
     # Handle response
     (when response
@@ -153,38 +225,19 @@ This module provides:
 
       # Check status code
       (cond
-        # Success
+        # Success (200)
         (= status-code 200)
-        (try
-          (do
-            (def parsed (json/decode body true))
-            (if-let [error (get parsed :error)]
-              (do
-                (eprintf "")
-                (eprintf "❌  API error: %s" (get error :message))
-                (eprintf "")
-                (set should-retry false)
-                nil)
-              (do
-                # Use vendor-specific response parsing
-                (set result (vendor/parse-response vendor-config parsed))
-                (set should-retry false)
-                result)))
-          ([err]
-            (eprint "")
-            (eprint "❌  Failed to parse API response: " err)
-            (eprint "Response body: " body)
-            (eprint "")
-            (set should-retry false)
-            nil))
+        (do
+          (set result (handle-success-response body vendor-config))
+          (set should-retry false))
 
-        # Handle various HTTP errors
+        # HTTP errors (401, 403, 429, 5xx, etc.)
         (do
           (def error-result (handle-http-error status-code body))
           (if (= error-result :retry)
-            # Server error, continue retry loop
-            (set should-retry (< attempt max-attempts))
-            # Other errors, stop retrying
+            # Server error (5xx), continue retry loop if attempts remain
+            (set should-retry (< attempt MAX-RETRY-ATTEMPTS))
+            # Other errors (401/403/429), stop retrying
             (set should-retry false))))))
 
   result)
