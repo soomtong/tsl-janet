@@ -134,9 +134,9 @@ The project is organized into modular components with clear separation of concer
   - `build-messages` - Constructs API message array
   - `validate-temperature` / `validate-persona` - Input validation
 
-- `src/request.janet` - HTTP request layer with retry logic
-  - `parse-http-response` - Parses HTTP response with status code extraction
-  - `handle-http-error` - Error handling for various HTTP status codes (401/403/429/5xx)
+- `src/request.janet` - HTTP request layer with retry logic using joyframework/http
+  - Uses `joyframework/http` for HTTP POST requests with custom headers
+  - `handle-http-error` - Error handling for various HTTP status codes (401/403/429/5xx) with emoji indicators
   - `make-llm-request` - Multi-vendor API communication with exponential backoff retry (max 3 attempts)
 
 - `src/vendor.janet` - Multi-vendor API abstraction layer
@@ -214,12 +214,13 @@ main.janet (CLI entry point)
 │   └── config.janet
 │   └── prompt.janet
 ├── request.janet (HTTP request layer)
+│   ├── http (joyframework/http for HTTP requests)
 │   ├── prompt.janet (validate-temperature, build-messages)
 │   └── vendor.janet (API format conversion)
 └── vendor.janet (multi-vendor API abstraction)
 ```
 
-Note: `main.janet` imports all modules and orchestrates the workflow. The `request.janet` module handles all HTTP communication with retry logic. The `vendor.janet` module is self-contained with no dependencies. Other modules have minimal cross-dependencies.
+Note: `main.janet` imports all modules and orchestrates the workflow. The `request.janet` module handles all HTTP communication with retry logic using `joyframework/http` instead of curl. The `vendor.janet` module is self-contained with no dependencies. Other modules have minimal cross-dependencies.
 
 ### Documentation Standards
 All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/documentation.html):

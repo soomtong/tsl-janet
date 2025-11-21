@@ -13,8 +13,32 @@ A text translation CLI tool built with Janet language, supporting multiple LLM v
 - [Janet](https://janet-lang.org/) 1.0 이상
 - [JPM](https://github.com/janet-lang/jpm) (Janet Package Manager)
 - [spork](https://github.com/janet-lang/spork) (자동 설치됨)
-- `curl` (API 요청용, 기본 설치됨)
+- [joyframework/http](https://github.com/joy-framework/http) (자동 설치됨)
+- **libcurl 개발 라이브러리** (시스템 의존성, 아래 설치 가이드 참조)
 - LLM API 키 (Groq, OpenAI, Anthropic, Gemini 등)
+
+### 시스템 의존성 설치
+
+joyframework/http 모듈은 libcurl 개발 라이브러리가 필요합니다:
+
+**macOS:**
+```bash
+# Homebrew 사용 (보통 이미 설치되어 있음)
+brew install curl
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install libcurl4-openssl-dev
+```
+
+**Fedora/RHEL/CentOS:**
+```bash
+sudo dnf install libcurl-devel
+# 또는
+sudo yum install libcurl-devel
+```
 
 ## 빠른 시작 (Quick Start)
 
@@ -30,7 +54,7 @@ jpm deps
 export GROQ_API_KEY="your-api-key-here"
 
 # 4. 번역 실행 (Korean → English 기본값)
-janet src/main.janet "안녕하세요"
+tsl "안녕하세요"
 ```
 
 ## 설치 (Installation)
@@ -73,44 +97,44 @@ export OPENAI_API_KEY="your-openai-key"
 
 ```bash
 # 기본값 사용 (Korean → English)
-janet src/main.janet "안녕하세요"
+tsl "안녕하세요"
 
 # Target 언어 지정
-janet src/main.janet "안녕하세요" --target Spanish
-janet src/main.janet "안녕하세요" -t French
+tsl "안녕하세요" --target Spanish
+tsl "안녕하세요" -t French
 
 # Source와 Target 모두 지정
-janet src/main.janet "Hello world" --source English --target Korean
-janet src/main.janet "Bonjour" -s French -t Korean
-janet src/main.janet "你好" --source Chinese --target English
+tsl "Hello world" --source English --target Korean
+tsl "Bonjour" -s French -t Korean
+tsl "你好" --source Chinese --target English
 
 # Temperature 조정 (창의성 vs 정확성)
-janet src/main.janet "안녕하세요" --temperature 0.1  # 더 정확하고 일관적
-janet src/main.janet "Hello" -s English -t Korean -T 0.7  # 더 창의적
+tsl "안녕하세요" --temperature 0.1  # 더 정확하고 일관적
+tsl "Hello" -s English -t Korean -T 0.7  # 더 창의적
 
 # 클립보드 복사 비활성화
-janet src/main.janet "Hello" --no-copy  # 클립보드에 복사하지 않음
+tsl "Hello" --no-copy  # 클립보드에 복사하지 않음
 
 # 페르소나 사용
-janet src/main.janet "코드 작성" --persona programming
-janet src/main.janet "연구 논문" --persona research
+tsl "코드 작성" --persona programming
+tsl "연구 논문" --persona research
 
 # 벤더 및 모델 지정
-janet src/main.janet "Hello" --vendor openai --model gpt-4o-mini
-janet src/main.janet "Hello" --vendor anthropic --model claude-3-5-sonnet-20241022
-janet src/main.janet "Hello" --vendor gemini --model gemini-1.5-flash
+tsl "Hello" --vendor openai --model gpt-4o-mini
+tsl "Hello" --vendor anthropic --model claude-3-5-sonnet-20241022
+tsl "Hello" --vendor gemini --model gemini-1.5-flash
 
 # 설정 확인
-janet src/main.janet --show-config      # 현재 설정 출력
-janet src/main.janet --show-prompt      # 현재 프롬프트 출력
-janet src/main.janet --show-persona     # 현재 페르소나 출력
+tsl --show-config      # 현재 설정 출력
+tsl --show-prompt      # 현재 프롬프트 출력
+tsl --show-persona     # 현재 페르소나 출력
 
 ```
 
 ### 사용 형식
 
 ```
-janet src/main.janet <텍스트> [옵션]
+tsl <텍스트> [옵션]
 ```
 
 **인자:**
@@ -136,7 +160,7 @@ janet src/main.janet <텍스트> [옵션]
 
 ```bash
 $ export GROQ_API_KEY="gsk_..."
-$ janet src/main.janet "안녕하세요"
+$ tsl "안녕하세요"
 Translating from Korean to English...
 Temperature: 0.3
 
@@ -146,7 +170,7 @@ Hello
 ```
 
 ```bash
-$ janet src/main.janet "Hello world" --source English --target Korean
+$ tsl "Hello world" --source English --target Korean
 Translating from English to Korean...
 Temperature: 0.3
 
@@ -156,7 +180,7 @@ Translation:
 ```
 
 ```bash
-$ janet src/main.janet "Bonjour" -s French -t Spanish -T 0.5
+$ tsl "Bonjour" -s French -t Spanish -T 0.5
 Translating from French to Spanish...
 Temperature: 0.5
 
@@ -166,7 +190,7 @@ Hola
 ```
 
 ```bash
-$ janet src/main.janet "Hello" --no-copy
+$ tsl "Hello" --no-copy
 Translating from Korean to English...
 Temperature: 0.3
 
