@@ -79,7 +79,6 @@
 ## Phase 6: 네트워크 서비스 개선 및 오류 처리
 - [ ] `net.janet` 모듈 활용
   - main.janet 의 네트워크 요청 코드를 `http-client.janet` 기반으로 리팩토링
-  - 기존 sh curl 기반 API 요청 코드를 `spork/http`으로 리팩토링
   - 비동기 요청 및 응답 처리 개선
 - [ ] 잘못된 API 키 처리
   - 인증 실패 시 사용자에게 알림 및 설정 파일 재설정 안내
@@ -93,3 +92,10 @@
   - OpenAI 호환 인터페이스(Groq, DeepSeek 등)와 독자 규격(Anthropic) 구분 처리
 - [ ] 동적 모델 바인딩
   - 설정 파일 또는 CLI 인자에서 지정한 모델을 API 요청에 반영
+
+## Phase 8: joyframework/http 모듈 적용
+- [ ] `joyframework/http` 모듈로 네트워크 요청 리팩토링
+  - `curl` 기반 코드를 `joyframework/http`로 전환
+  - 요청 생성, 헤더 설정, 응답 처리 로직 개선
+  - README 및 문서화 업데이트
+- [ ] 온보딩 프로세스 및 각종 화면 출력에 유니코드 이모지 적용
