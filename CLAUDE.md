@@ -106,13 +106,17 @@ The project is organized into modular components with clear separation of concer
 
 **Core Modules:**
 - `src/main.janet` - CLI entry point and workflow orchestration
-  - `show-config` / `show-prompt` / `show-persona` - Configuration display utilities
   - `main` - Entry point with argument parsing and translation execution
 
 - `src/cli.janet` - Command-line argument parsing
   - `parse-args` - Parses CLI flags and merges with config (priority: CLI > Config > Defaults)
+
+- `src/cli-help.janet` - Help display utilities
   - `print-usage` - Usage information display
   - `print-init-suggestion` - Suggests running `--init` for new users
+  - `show-config` - Display current configuration settings
+  - `show-prompt` - Display system prompt template
+  - `show-persona` - Display persona information
 
 - `src/config.janet` - Configuration file management
   - `load-config` - Loads config from XDG path, merges with defaults
@@ -208,10 +212,11 @@ Integration tests use temporary directories and environment cleanup to avoid sid
 ```
 main.janet (CLI entry point)
 ├── cli.janet (argument parsing)
+├── cli-help.janet (help display utilities)
 ├── config.janet (config file I/O)
 │   └── prompt.janet (for DEFAULT_TEMPERATURE)
 ├── init.janet (initialization wizard)
-│   └── config.janet
+│   ├── config.janet
 │   └── prompt.janet
 ├── request.janet (HTTP request layer)
 │   ├── http (joyframework/http for HTTP requests)
@@ -220,7 +225,7 @@ main.janet (CLI entry point)
 └── vendor.janet (multi-vendor API abstraction)
 ```
 
-Note: `main.janet` imports all modules and orchestrates the workflow. The `request.janet` module handles all HTTP communication with retry logic using `joyframework/http` instead of curl. The `vendor.janet` module is self-contained with no dependencies. Other modules have minimal cross-dependencies.
+Note: `main.janet` imports all modules and orchestrates the workflow. The `cli.janet` module also imports `cli-help.janet` for help display functions. The `request.janet` module handles all HTTP communication with retry logic using `joyframework/http` instead of curl. The `vendor.janet` module is self-contained with no dependencies. Other modules have minimal cross-dependencies.
 
 ### Documentation Standards
 All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/documentation.html):

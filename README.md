@@ -17,29 +17,6 @@ A text translation CLI tool built with Janet language, supporting multiple LLM v
 - **libcurl 개발 라이브러리** (시스템 의존성, 아래 설치 가이드 참조)
 - LLM API 키 (Groq, OpenAI, Anthropic, Gemini 등)
 
-### 시스템 의존성 설치
-
-joyframework/http 모듈은 libcurl 개발 라이브러리가 필요합니다:
-
-**macOS:**
-```bash
-# Homebrew 사용 (보통 이미 설치되어 있음)
-brew install curl
-```
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get update
-sudo apt-get install libcurl4-openssl-dev
-```
-
-**Fedora/RHEL/CentOS:**
-```bash
-sudo dnf install libcurl-devel
-# 또는
-sudo yum install libcurl-devel
-```
-
 ## 빠른 시작 (Quick Start)
 
 ```bash
@@ -64,9 +41,29 @@ tsl "안녕하세요"
 ```bash
 # spork 및 필요한 패키지 설치
 jpm deps
+```
 
-# 또는 수동으로 spork 설치
-jpm install spork
+### 시스템 의존성 설치
+
+joyframework/http 모듈은 libcurl 개발 라이브러리가 필요합니다:
+
+**macOS:**
+```bash
+# Homebrew 사용 (보통 이미 설치되어 있음)
+brew install curl
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install libcurl4-openssl-dev
+```
+
+**Fedora/RHEL/CentOS:**
+```bash
+sudo dnf install libcurl-devel
+# 또는
+sudo yum install libcurl-devel
 ```
 
 ### 환경 변수 설정
@@ -254,17 +251,6 @@ test suite test/test-main.janet finished in 0.000 seconds - 10 of 10 tests passe
 All tests passed.
 ```
 
-**테스트 커버리지:**
-- ✅ 환경 변수 처리
-- ✅ GROQ_API_KEY 검증
-- ✅ API 페이로드 구조
-- ✅ JSON 인코딩/디코딩
-- ✅ HTTP 헤더 구성
-- ✅ 문자열 및 데이터 구조 작업
-- ✅ 에러 핸들링
-
-**총 17개 테스트 모두 통과 ✅**
-
 ## 프로젝트 구조 (Project Structure)
 
 ```
@@ -312,7 +298,7 @@ tsl-janet/
 - [x] 초기화 마법사 (--init)
 - [x] 페르소나 시스템
 - [x] 설정 상태 확인 플래그 (--show-config, --show-prompt, --show-persona)
-- [ ] 다중 모델 지원 (llama-3.3-70b-versatile, mixtral 등)
+- [x] 다중 모델 지원 (llama-3.3-70b-versatile, mixtral 등)
 - [ ] 스트리밍 응답 지원
 - [ ] 대화 히스토리 관리
 - [ ] 일괄 번역 기능
@@ -329,6 +315,7 @@ MIT License
 
 - [Janet Language](https://janet-lang.org/)
 - [spork Library](https://github.com/janet-lang/spork)
+- [joyframework/http Library](https://github.com/joy-framework/http)
 - [Groq API Documentation](https://console.groq.com/docs)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [Anthropic API Documentation](https://docs.anthropic.com)
