@@ -1,12 +1,46 @@
 ``Module for CLI help and configuration display functions.
 
 This module provides:
+- Usage information (print-usage)
 - Configuration display (show-config)
 - Prompt template display (show-prompt)
 - Persona information display (show-persona)
 ``
 
 (import ./prompt)
+
+(defn print-usage
+  ``Print usage information.``
+  []
+  (eprint "Usage: tsl <text> [options]")
+  (eprint "")
+  (eprint "Options:")
+  (eprint "  -s, --source <lang>      Source language (default: Korean)")
+  (eprint "  -t, --target <lang>      Target language (default: English)")
+  (eprint "  -T, --temperature <num>  Temperature 0.0-2.0 (default: 0.3)")
+  (eprint "  -p, --persona <name>     Persona (default, programming, research, review)")
+  (eprint "  -V, --vendor <vendor>    LLM vendor (groq, openai, anthropic, etc.)")
+  (eprint "  -m, --model <model>      Model name")
+  (eprint "  --no-copy                Disable automatic clipboard copy")
+  (eprint "  --init                   Run configuration wizard")
+  (eprint "  --show-config            Show current configuration")
+  (eprint "  --show-prompt            Show current prompt template")
+  (eprint "  --show-persona           Show current persona")
+  (eprint "  -h, --help               Show this help message")
+  (eprint "")
+  (eprint "Examples:")
+  (eprint "  tsl \"안녕하세요\"")
+  (eprint "  tsl \"안녕하세요\" --target English")
+  (eprint "  tsl \"Hello\" -s English -t Korean")
+  (eprint "  tsl \"Bonjour\" -s French -t Korean -T 0.5")
+  (eprint "  tsl \"코드 작성\" --persona programming")
+  (eprint "  tsl \"Hello\" -V openai -m gpt-4o-mini")
+  (eprint "  tsl \"Hello\" --vendor anthropic --model claude-4-5-haiku-20241022")
+  (eprint "  tsl \"Hello\" --no-copy")
+  (eprint "  tsl --init")
+  (eprint "  tsl --show-config")
+  (eprint "  tsl --show-prompt")
+  (eprint "  tsl --show-persona"))
 
 (defn show-config
   ``Display current configuration settings.

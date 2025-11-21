@@ -1,5 +1,6 @@
 (import ../src/config)
 (import ../src/cli)
+(import ../src/cli-help)
 
 # Helper function to create test config
 (defn make-test-config []
@@ -233,12 +234,12 @@
   (print "\nTesting print functions...")
 
   # These functions just print to stderr, so we just verify they're callable
-  (assert (function? cli/print-usage) "print-usage should be a function")
+  (assert (function? cli-help/print-usage) "print-usage should be a function")
   (assert (function? cli/print-init-suggestion) "print-init-suggestion should be a function")
 
   # Call them to ensure they don't crash (output will go to stderr)
   (try
-    (cli/print-usage)
+    (cli-help/print-usage)
     ([err]
       (error "print-usage should not throw error")))
 

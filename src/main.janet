@@ -57,7 +57,7 @@
     (os/exit 0))
 
   (when (get parsed :help)
-    (cli/print-usage)
+    (cli-help/print-usage)
     (os/exit 0))
 
   (def text (parsed :text))
@@ -87,7 +87,7 @@
   (unless text
     (eprint "❌  Error: No text provided to translate.")
     (eprint "")
-    (cli/print-usage)
+    (cli-help/print-usage)
     (os/exit 1))
 
   # Execute translation

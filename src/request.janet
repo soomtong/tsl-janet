@@ -29,9 +29,9 @@ This module provides:
     (or (= status-code 401) (= status-code 403))
     (do
       (eprint "")
-      (eprint "❌ Authentication Error (HTTP " status-code ")")
+      (eprint "❌  Authentication Error (HTTP " status-code ")")
       (eprint "")
-      (eprint "🔑 Your API key is invalid or expired.")
+      (eprint "🔑  Your API key is invalid or expired.")
       (eprint "")
       (eprint "Please either:")
       (eprint "  1. Update your environment variable (e.g., GROQ_API_KEY)")
@@ -57,14 +57,14 @@ This module provides:
       (eprintf "⚠️  Server Error (HTTP %d)" status-code)
       (eprintf "")
       (eprintf "The API server encountered an error.")
-      (eprintf "🔄 This is usually temporary. Retrying...")
+      (eprintf "🔄  This is usually temporary. Retrying...")
       (eprintf "")
       :retry)
 
     # Other errors
     (do
       (eprintf "")
-      (eprintf "❌ HTTP Error %d" status-code)
+      (eprintf "❌  HTTP Error %d" status-code)
       (eprintf "Response: %s" body)
       (eprintf "")
       nil)))
@@ -127,7 +127,7 @@ This module provides:
     # Show retry message
     (when (> attempt 1)
       (def backoff-seconds (math/pow 2 (- attempt 2)))
-      (eprintf "🔄 Retry attempt %d/%d (waiting %d second%s)..."
+      (eprintf "🔄  Retry attempt %d/%d (waiting %d second%s)..."
                attempt max-attempts backoff-seconds
                (if (= backoff-seconds 1) "" "s"))
       (os/sleep backoff-seconds))
@@ -138,12 +138,12 @@ This module provides:
         (http/post url json-body :headers headers)
         ([err]
           (eprint "")
-          (eprint "🌐 Network Error:")
+          (eprint "🌐  Network Error:")
           (eprint err)
           (eprint "")
           (if (< attempt max-attempts)
-            (eprint "🔄 Retrying...")
-            (eprint "❌ Maximum retry attempts reached."))
+            (eprint "🔄  Retrying...")
+            (eprint "❌  Maximum retry attempts reached."))
           nil)))
 
     # Handle response
@@ -161,7 +161,7 @@ This module provides:
             (if-let [error (get parsed :error)]
               (do
                 (eprintf "")
-                (eprintf "❌ API error: %s" (get error :message))
+                (eprintf "❌  API error: %s" (get error :message))
                 (eprintf "")
                 (set should-retry false)
                 nil)
@@ -172,7 +172,7 @@ This module provides:
                 result)))
           ([err]
             (eprint "")
-            (eprint "❌ Failed to parse API response: " err)
+            (eprint "❌  Failed to parse API response: " err)
             (eprint "Response body: " body)
             (eprint "")
             (set should-retry false)
