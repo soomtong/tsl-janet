@@ -5,7 +5,8 @@
   :license "MIT"
   :url "https://github.com/yourusername/tsl-janet"
   :repo "git+https://github.com/yourusername/tsl-janet.git"
-  :dependencies ["https://github.com/janet-lang/spork.git"])
+  :dependencies ["https://github.com/janet-lang/spork.git"
+                 "https://github.com/joy-framework/http"])
 
 (declare-executable
   :name "tsl"

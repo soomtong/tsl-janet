@@ -217,11 +217,11 @@
   []
 
   (print "")
-  (print "=== TSL Configuration Wizard ===")
+  (print "🔧  TSL Configuration Wizard")
   (print "")
 
   # Step 1: Scan for API keys
-  (print "Scanning for API keys...")
+  (print "🔍  Scanning for API keys...")
   (def scan-result (scan-api-keys))
   (def available-vendors (scan-result :vendors))
   (def key-map (scan-result :keys))
@@ -231,7 +231,7 @@
       (each vendor available-vendors
         (def env-var (get key-map vendor))
         (printf "✓ Found %s (%s)" env-var (get vendor-names vendor))))
-    (print "⚠ No API keys found in environment variables"))
+    (print "⚠  No API keys found in environment variables"))
 
   (print "")
 
@@ -251,7 +251,7 @@
 
       (def vendor-idx
         (prompt-choice
-          "Available vendors:"
+          "🏢  Available vendors:"
           vendor-choices
           default-idx))  # Default to groq if available, otherwise first vendor
 
@@ -281,7 +281,7 @@
     (do
       (def model-idx
         (prompt-choice
-          (string "Available models for " vendor-name ":")
+          (string "🎯  Available models for " vendor-name ":")
           models
           0))  # Default to first model
 
@@ -297,10 +297,10 @@
 
   # Step 4: Source language
   (print "")
-  (def source-lang (prompt-input "Source language" "Korean"))
+  (def source-lang (prompt-input "🌍  Source language" "Korean"))
 
   # Step 5: Target language
-  (def target-lang (prompt-input "Target language" "English"))
+  (def target-lang (prompt-input "🌍  Target language" "English"))
 
   # Step 6: Persona selection
   (print "")
@@ -314,7 +314,7 @@
 
   (def persona-idx
     (prompt-choice
-      "Select persona:"
+      "🎭  Select persona:"
       persona-choices
       default-persona-idx))
 
@@ -325,7 +325,7 @@
 
   # Step 7: Temperature
   (print "")
-  (def temp-input (prompt-input "Temperature (0.0-2.0)" "0.3"))
+  (def temp-input (prompt-input "🌡️ Temperature (0.0-2.0)" "0.3"))
   (def temperature
     (let [parsed (scan-number temp-input)]
       (if (and parsed (>= parsed 0.0) (<= parsed 2.0))
@@ -334,12 +334,12 @@
 
   # Step 8: Clipboard copy
   (print "")
-  (def copy-enabled (prompt-yes-no "Enable clipboard copy by default?" true))
+  (def copy-enabled (prompt-yes-no "📋  Enable clipboard copy by default?" true))
 
   # Step 9: Save API key (optional)
   (print "")
   (def has-env-key (get key-map selected-vendor))
-  (def save-api-key (prompt-yes-no "Save API key to config file?" (not has-env-key)))
+  (def save-api-key (prompt-yes-no "🔑  Save API key to config file?" (not has-env-key)))
 
   (var api-key-value nil)
   (when save-api-key
@@ -365,7 +365,7 @@
 
   # Save configuration
   (print "")
-  (print "Saving configuration...")
+  (print "💾  Saving configuration...")
   (def save-result (config/save-config new-config))
 
   (if save-result
@@ -373,7 +373,7 @@
       (print "")
       (print "✓ Configuration saved successfully!")
       (print "")
-      (print "=== Configuration Summary ===")
+      (print "✅  Configuration Summary")
       (printf "Vendor:       %s" vendor-name)
       (printf "Model:        %s" selected-model)
       (printf "Source:       %s" source-lang)
@@ -384,7 +384,7 @@
       (when api-key-value
         (printf "API Key:      saved"))
       (print "")
-      (print "You can now use: janet src/main.janet \"your text\""))
+      (print "🚀  You can now use: tsl \"your text\""))
     (do
       (eprint "")
       (eprint "✗ Failed to save configuration.")

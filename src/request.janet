@@ -1,36 +1,16 @@
 ``Module for LLM API requests with retry logic.
 
 This module provides:
-- HTTP response parsing and error handling
+- HTTP requests using joyframework/http
 - Multi-vendor LLM API requests (via vendor.janet)
 - Exponential backoff retry logic for network/server errors
 - Support for Groq, OpenAI, Anthropic, Gemini, and other vendors
 ``
 
 (import spork/json)
-(import spork/sh)
+(import http)
 (import ./prompt)
 (import ./vendor)
-
-(defn parse-http-response
-  ``Parse HTTP response with status code.
-
-  Expects response in format: "BODY\nSTATUS_CODE"
-
-  Arguments:
-  - response: Full HTTP response string
-
-  Returns:
-  Struct with :body and :status-code, or nil on parse failure
-  ``
-  [response]
-
-  (def lines (string/split "\n" response))
-  (when (>= (length lines) 2)
-    (def status-line (last lines))
-    (def status-code (scan-number status-line))
-    (def body (string/join (slice lines 0 -2) "\n"))
-    {:body body :status-code status-code}))
 
 (defn handle-http-error
   ``Handle HTTP error with appropriate message.
@@ -49,13 +29,13 @@ This module provides:
     (or (= status-code 401) (= status-code 403))
     (do
       (eprint "")
-      (eprint "Authentication Error (HTTP " status-code ")")
+      (eprint "❌ Authentication Error (HTTP " status-code ")")
       (eprint "")
-      (eprint "Your API key is invalid or expired.")
+      (eprint "🔑 Your API key is invalid or expired.")
       (eprint "")
       (eprint "Please either:")
       (eprint "  1. Update your environment variable (e.g., GROQ_API_KEY)")
-      (eprint "  2. Run configuration setup: janet src/main.janet --init")
+      (eprint "  2. Run configuration setup: tsl --init")
       (eprint "")
       nil)
 
@@ -63,7 +43,7 @@ This module provides:
     (= status-code 429)
     (do
       (eprint "")
-      (eprint "Rate Limit Error (HTTP 429)")
+      (eprint "⏱️  Rate Limit Error (HTTP 429)")
       (eprint "")
       (eprint "You have exceeded the API rate limit.")
       (eprint "Please wait a few minutes and try again.")
@@ -74,17 +54,17 @@ This module provides:
     (and (>= status-code 500) (< status-code 600))
     (do
       (eprintf "")
-      (eprintf "Server Error (HTTP %d)" status-code)
+      (eprintf "⚠️  Server Error (HTTP %d)" status-code)
       (eprintf "")
       (eprintf "The API server encountered an error.")
-      (eprintf "This is usually temporary. Retrying...")
+      (eprintf "🔄 This is usually temporary. Retrying...")
       (eprintf "")
       :retry)
 
     # Other errors
     (do
       (eprintf "")
-      (eprintf "HTTP Error %d" status-code)
+      (eprintf "❌ HTTP Error %d" status-code)
       (eprintf "Response: %s" body)
       (eprintf "")
       nil)))
@@ -147,86 +127,64 @@ This module provides:
     # Show retry message
     (when (> attempt 1)
       (def backoff-seconds (math/pow 2 (- attempt 2)))
-      (eprintf "Retry attempt %d/%d (waiting %d second%s)..."
+      (eprintf "🔄 Retry attempt %d/%d (waiting %d second%s)..."
                attempt max-attempts backoff-seconds
                (if (= backoff-seconds 1) "" "s"))
       (os/sleep backoff-seconds))
 
-    # Make HTTP POST request using curl via spork/sh
-    # Build curl command with dynamic headers
-    (def curl-args
-      @["curl" "-s" "-X" "POST" "-w" "\n%{http_code}" url])
-
-    # Add all headers
-    (each [key val] (pairs headers)
-      (array/push curl-args "-H")
-      (array/push curl-args (string key ": " val)))
-
-    # Add body
-    (array/push curl-args "-d")
-    (array/push curl-args json-body)
-
+    # Make HTTP POST request using joyframework/http
     (def response
       (try
-        (sh/exec-slurp ;curl-args)
+        (http/post url json-body :headers headers)
         ([err]
           (eprint "")
-          (eprint "Network Error:")
+          (eprint "🌐 Network Error:")
           (eprint err)
           (eprint "")
           (if (< attempt max-attempts)
-            (eprint "Retrying...")
-            (eprint "Maximum retry attempts reached."))
+            (eprint "🔄 Retrying...")
+            (eprint "❌ Maximum retry attempts reached."))
           nil)))
 
     # Handle response
     (when response
-      (def parsed-response (parse-http-response response))
+      (def status-code (get response :status))
+      (def body (get response :body))
 
-      (if parsed-response
-        (do
-          (def status-code (get parsed-response :status-code))
-          (def body (get parsed-response :body))
-
-          # Check status code
-          (cond
-            # Success
-            (= status-code 200)
-            (try
+      # Check status code
+      (cond
+        # Success
+        (= status-code 200)
+        (try
+          (do
+            (def parsed (json/decode body true))
+            (if-let [error (get parsed :error)]
               (do
-                (def parsed (json/decode body true))
-                (if-let [error (get parsed :error)]
-                  (do
-                    (eprintf "")
-                    (eprintf "API error: %s" (get error :message))
-                    (eprintf "")
-                    (set should-retry false)
-                    nil)
-                  (do
-                    # Use vendor-specific response parsing
-                    (set result (vendor/parse-response vendor-config parsed))
-                    (set should-retry false)
-                    result)))
-              ([err]
-                (eprint "")
-                (eprint "Failed to parse API response: " err)
-                (eprint "Response body: " body)
-                (eprint "")
+                (eprintf "")
+                (eprintf "❌ API error: %s" (get error :message))
+                (eprintf "")
                 (set should-retry false)
-                nil))
+                nil)
+              (do
+                # Use vendor-specific response parsing
+                (set result (vendor/parse-response vendor-config parsed))
+                (set should-retry false)
+                result)))
+          ([err]
+            (eprint "")
+            (eprint "❌ Failed to parse API response: " err)
+            (eprint "Response body: " body)
+            (eprint "")
+            (set should-retry false)
+            nil))
 
-            # Handle various HTTP errors
-            (do
-              (def error-result (handle-http-error status-code body))
-              (if (= error-result :retry)
-                # Server error, continue retry loop
-                (set should-retry (< attempt max-attempts))
-                # Other errors, stop retrying
-                (set should-retry false)))))
-
-        # Failed to parse response
+        # Handle various HTTP errors
         (do
-          (eprint "Failed to parse HTTP response format")
-          (set should-retry false)))))
+          (def error-result (handle-http-error status-code body))
+          (if (= error-result :retry)
+            # Server error, continue retry loop
+            (set should-retry (< attempt max-attempts))
+            # Other errors, stop retrying
+            (set should-retry false))))))
 
   result)

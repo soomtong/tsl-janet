@@ -83,7 +83,7 @@
   (def actual-args
     (if (and (> (length all-args) 1)
              (string/has-suffix? ".janet" (get all-args 1)))
-      # Running with `janet src/main.janet ...`, slice first 2
+      # Running with `tsl ...`, slice first 2
       (tuple/slice all-args 2)
       # Running compiled binary `./tsl ...`, slice first 1
       (tuple/slice all-args 1)))
@@ -135,25 +135,25 @@
   # Validate API Key
   (unless api-key
     (eprint "")
-    (eprint "Error: No API Key found.")
+    (eprint "❌  Error: No API Key found.")
     (eprint "")
     (eprint "Please either:")
     (eprint "  1. Set GROQ_API_KEY environment variable:")
     (eprint "     export GROQ_API_KEY=\"your-key-here\"")
     (eprint "  2. Run configuration setup:")
-    (eprint "     janet src/main.janet --init")
+    (eprint "     tsl --init")
     (eprint "")
     (os/exit 1))
 
   # Validate text
   (unless text
-    (eprint "Error: No text provided to translate.")
+    (eprint "❌ Error: No text provided to translate.")
     (eprint "")
     (cli/print-usage)
     (os/exit 1))
 
   # Execute translation
-  (print "Translating from " source " to " target "...")
+  (print "🌐 Translating from " source " to " target "...")
   (print "Vendor: " vendor)
   (print "Model: " model)
   (print "Temperature: " temperature)
@@ -164,7 +164,7 @@
   (if result
     (do
       (print "")
-      (print "Translation:")
+      (print "✨ Translation:")
       (print result)
 
       # Copy to clipboard if enabled
@@ -182,5 +182,5 @@
             # Silently ignore if pbcopy is not available
             nil))))
     (do
-      (eprint "Translation failed.")
+      (eprint "❌ Translation failed.")
       (os/exit 1))))

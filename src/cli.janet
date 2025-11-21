@@ -3,7 +3,7 @@
 (defn print-usage
   ``Print usage information.``
   []
-  (eprint "Usage: janet src/main.janet <text> [options]")
+  (eprint "Usage: tsl <text> [options]")
   (eprint "")
   (eprint "Options:")
   (eprint "  -s, --source <lang>      Source language (default: Korean)")
@@ -20,18 +20,18 @@
   (eprint "  -h, --help               Show this help message")
   (eprint "")
   (eprint "Examples:")
-  (eprint "  janet src/main.janet \"안녕하세요\"")
-  (eprint "  janet src/main.janet \"안녕하세요\" --target English")
-  (eprint "  janet src/main.janet \"Hello\" -s English -t Korean")
-  (eprint "  janet src/main.janet \"Bonjour\" -s French -t Korean -T 0.5")
-  (eprint "  janet src/main.janet \"코드 작성\" --persona programming")
-  (eprint "  janet src/main.janet \"Hello\" -V openai -m gpt-4o-mini")
-  (eprint "  janet src/main.janet \"Hello\" --vendor anthropic --model claude-4-5-haiku-20241022")
-  (eprint "  janet src/main.janet \"Hello\" --no-copy")
-  (eprint "  janet src/main.janet --init")
-  (eprint "  janet src/main.janet --show-config")
-  (eprint "  janet src/main.janet --show-prompt")
-  (eprint "  janet src/main.janet --show-persona"))
+  (eprint "  tsl \"안녕하세요\"")
+  (eprint "  tsl \"안녕하세요\" --target English")
+  (eprint "  tsl \"Hello\" -s English -t Korean")
+  (eprint "  tsl \"Bonjour\" -s French -t Korean -T 0.5")
+  (eprint "  tsl \"코드 작성\" --persona programming")
+  (eprint "  tsl \"Hello\" -V openai -m gpt-4o-mini")
+  (eprint "  tsl \"Hello\" --vendor anthropic --model claude-4-5-haiku-20241022")
+  (eprint "  tsl \"Hello\" --no-copy")
+  (eprint "  tsl --init")
+  (eprint "  tsl --show-config")
+  (eprint "  tsl --show-prompt")
+  (eprint "  tsl --show-persona"))
 
 (defn print-init-suggestion
   ``Print suggestion to run --init if config doesn't exist.``
@@ -39,7 +39,7 @@
   (eprint "")
   (eprint "Configuration file not found.")
   (eprint "Run with --init flag to set up your configuration:")
-  (eprint "  janet src/main.janet --init")
+  (eprint "  tsl --init")
   (eprint "")
   (eprint "Or continue with default settings (Groq, Korean->English)")
   (eprint ""))
