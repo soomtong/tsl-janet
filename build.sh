@@ -17,3 +17,5 @@ echo "Cleaning up..."
 rm -rf build
 
 echo "Build complete. Binary is in dist/tsl"
+echo ""
+echo "Install with: sh install.sh"
