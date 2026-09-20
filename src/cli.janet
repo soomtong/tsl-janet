@@ -36,6 +36,7 @@
   (var show-prompt false)
   (var show-persona false)
   (var show-help false)
+  (var show-version false)
   (var i 0)
 
   (while (< i (length args))
@@ -110,6 +111,10 @@
       (or (= arg "--help") (= arg "-h"))
       (set show-help true)
 
+      # Version flag
+      (or (= arg "--version") (= arg "-v"))
+      (set show-version true)
+
       # Unknown flag
       (string/has-prefix? "--" arg)
       (do
@@ -136,6 +141,7 @@
    :show-prompt show-prompt
    :show-persona show-persona
    :help show-help
+   :version show-version
    :api-key (config/get-api-key
               (if (= vendor (get config :vendor))
                 config

@@ -29,6 +29,11 @@
   # Load config and parse args
   (def conf (config/load-config))
 
+  # Handle --version early so nothing else (e.g. init suggestion) is printed
+  (when (some |(or (= $ "--version") (= $ "-v")) actual-args)
+    (cli-help/print-version)
+    (os/exit 0))
+
   # Check if --init flag is present (early check before full parsing)
   (def has-init-flag (some |(= $ "--init") actual-args))
 

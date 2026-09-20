@@ -2,16 +2,24 @@
 
 This module provides:
 - Usage information (print-usage)
+- Version display (print-version)
 - Configuration display (show-config)
 - Prompt template display (show-prompt)
 - Persona information display (show-persona)
 ``
 
 (import ./prompt)
+(import ./version)
+
+(defn print-version
+  ``Print the current version to stdout.``
+  []
+  (print "tsl " version/VERSION))
 
 (defn print-usage
   ``Print usage information.``
   []
+  (eprintf "tsl %s" version/VERSION)
   (eprint "Usage: tsl <text> [options]")
   (eprint "")
   (eprint "Quotes are optional: all non-flag words are joined into one sentence.")
@@ -30,6 +38,7 @@ This module provides:
   (eprint "  --show-prompt            Show current prompt template")
   (eprint "  --show-persona           Show current persona")
   (eprint "  -h, --help               Show this help message")
+  (eprint "  -v, --version            Show version")
   (eprint "")
   (eprint "Examples:")
   (eprint "  tsl \"안녕하세요\"")

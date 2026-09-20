@@ -1,6 +1,7 @@
 (import ../src/config)
 (import ../src/cli)
 (import ../src/cli-help)
+(import ../src/version)
 
 # Helper function to create test config
 (defn make-test-config []
@@ -379,6 +380,31 @@
   (os/setenv "CEREBRAS_API_KEY" saved)
   (print "Vendor override API key test passed!"))
 
+(defn test-version []
+  (print "\nTesting version constant and --version flag...")
+  (def conf (make-test-config))
+
+  # Version constant must look like semver (major.minor.patch)
+  (assert (string? version/VERSION) "VERSION should be a string")
+  (assert (peg/match '(* :d+ "." :d+ "." :d+ -1) version/VERSION)
+          "VERSION should be in major.minor.patch form")
+
+  # --version flag is parsed and does not consume text
+  (def res1 (cli/parse-args @["--version"] conf))
+  (assert (= (res1 :version) true) "--version should set :version")
+  (assert (nil? (res1 :text)) "--version should not be treated as text")
+
+  (def res2 (cli/parse-args @["hello"] conf))
+  (assert (= (res2 :version) false) "Without flag, :version should be false")
+
+  # Version helper prints without error
+  (assert (function? cli-help/print-version) "print-version should be a function")
+  (try
+    (cli-help/print-version)
+    ([err] (error "print-version should not throw error")))
+
+  (print "Version test passed!"))
+
 (defn main [&]
   (print "=== Running CLI Module Tests ===\n")
   (test-short-flags)
@@ -395,4 +421,5 @@
   (test-init-flag-variations)
   (test-persona-flag)
   (test-vendor-override-api-key)
+  (test-version)
   (print "\n=== All CLI tests passed! ==="))

@@ -128,6 +128,7 @@ tsl "Hello" --vendor gemini --model gemini-1.5-flash
 tsl --show-config      # 현재 설정 출력
 tsl --show-prompt      # 현재 프롬프트 출력
 tsl --show-persona     # 현재 페르소나 출력
+tsl --version          # 버전 출력
 
 ```
 
@@ -155,6 +156,7 @@ tsl <텍스트> [옵션]
 - `--show-config`: 현재 설정 정보 출력
 - `--show-prompt`: 현재 프롬프트 템플릿 출력
 - `--show-persona`: 현재 페르소나 정보 출력
+- `-v`, `--version`: 버전 출력
 
 ### 예제 출력
 

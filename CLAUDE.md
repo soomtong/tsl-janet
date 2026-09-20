@@ -114,8 +114,12 @@ The project is organized into modular components with clear separation of concer
 - `src/cli.janet` - Command-line argument parsing
   - `parse-args` - Parses CLI flags and merges with config (priority: CLI > Config > Defaults)
 
+- `src/version.janet` - Single source of truth for the version string
+  - `VERSION` - Read by project.janet (`:version`) and by `--help` / `--version`
+
 - `src/cli-help.janet` - Help display utilities
-  - `print-usage` - Usage information display
+  - `print-usage` - Usage information display (includes version)
+  - `print-version` - Prints `tsl <version>` to stdout
   - `print-init-suggestion` - Suggests running `--init` for new users
   - `show-config` - Display current configuration settings
   - `show-prompt` - Display system prompt template
