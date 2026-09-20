@@ -1,5 +1,6 @@
 (declare-project
   :name "tsl-janet"
+  :version "0.3.0"
   :description "A CLI tool for text translation using LLM vendors with Janet language"
   :author "tsl-janet contributors"
   :license "MIT"
