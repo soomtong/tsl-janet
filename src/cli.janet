@@ -136,4 +136,9 @@
    :show-prompt show-prompt
    :show-persona show-persona
    :help show-help
-   :api-key (config/get-api-key config)})
+   :api-key (config/get-api-key
+              (if (= vendor (get config :vendor))
+                config
+                # Vendor overridden on CLI: a key stored for the config's
+                # vendor must not be reused, only that vendor's env var.
+                (put (merge config {:vendor vendor}) :api-key nil)))})

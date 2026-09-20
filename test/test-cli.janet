@@ -356,6 +356,29 @@
 
   (print "Persona flag test passed!"))
 
+(defn test-vendor-override-api-key []
+  (print "\nTesting API key resolution when vendor is overridden...")
+  (def conf {:vendor "groq" :model "groq/compound-mini" :api-key "stored-groq-key"})
+  (def saved (os/getenv "CEREBRAS_API_KEY"))
+  (os/setenv "CEREBRAS_API_KEY" "env-cerebras-key")
+
+  # CLI vendor override should resolve that vendor's env key, not the stored key
+  (def res1 (cli/parse-args @["hello" "-V" "cerebras"] conf))
+  (assert (= (res1 :api-key) "env-cerebras-key") "Overridden vendor should use its own env key")
+
+  # Stored key must not leak to a different vendor when no env key exists
+  (os/setenv "CEREBRAS_API_KEY" nil)
+  (def res2 (cli/parse-args @["hello" "-V" "cerebras"] conf))
+  (assert (nil? (res2 :api-key)) "Stored key of another vendor should not be used")
+
+  # Same vendor as config still falls back to the stored key
+  (os/setenv "GROQ_API_KEY" nil)
+  (def res3 (cli/parse-args @["hello"] conf))
+  (assert (= (res3 :api-key) "stored-groq-key") "Config vendor should still use stored key")
+
+  (os/setenv "CEREBRAS_API_KEY" saved)
+  (print "Vendor override API key test passed!"))
+
 (defn main [&]
   (print "=== Running CLI Module Tests ===\n")
   (test-short-flags)
@@ -371,4 +394,5 @@
   (test-no-copy-flag)
   (test-init-flag-variations)
   (test-persona-flag)
+  (test-vendor-override-api-key)
   (print "\n=== All CLI tests passed! ==="))
