@@ -14,6 +14,9 @@ This module provides:
   []
   (eprint "Usage: tsl <text> [options]")
   (eprint "")
+  (eprint "Quotes are optional: all non-flag words are joined into one sentence.")
+  (eprint "  tsl 번역하고 싶은 표현    is the same as    tsl \"번역하고 싶은 표현\"")
+  (eprint "")
   (eprint "Options:")
   (eprint "  -s, --source <lang>      Source language (default: Korean)")
   (eprint "  -t, --target <lang>      Target language (default: English)")

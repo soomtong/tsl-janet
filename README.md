@@ -96,6 +96,9 @@ export OPENAI_API_KEY="your-openai-key"
 # 기본값 사용 (Korean → English)
 tsl "안녕하세요"
 
+# 따옴표 없이 여러 단어를 입력해도 하나의 문장으로 합쳐짐
+tsl 번역하고 싶은 표현
+
 # Target 언어 지정
 tsl "안녕하세요" --target Spanish
 tsl "안녕하세요" -t French

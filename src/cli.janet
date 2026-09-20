@@ -15,11 +15,15 @@
   ``Parse command line arguments and merge with configuration.
 
   Priority: CLI Flags > Config File > Defaults
+
+  All positional (non-flag) arguments are collected and joined with a
+  single space, so `tsl 번역하고 싶은 표현` and `tsl "번역하고 싶은 표현"`
+  produce the same text.
   ``
   [args config]
 
   # Start with values from config (which already contains defaults)
-  (var text nil)
+  (def text-parts @[])
   (var source (get config :source))
   (var target (get config :target))
   (var persona (get config :persona))
@@ -106,17 +110,18 @@
       (or (= arg "--help") (= arg "-h"))
       (set show-help true)
 
-      # Positional argument (text)
-      (nil? text)
-      (set text arg)
-
       # Unknown flag
       (string/has-prefix? "--" arg)
       (do
         (eprintf "Unknown flag: %s" arg)
-        (os/exit 1)))
+        (os/exit 1))
+
+      # Positional argument (text): collect every word
+      (array/push text-parts arg))
 
     (set i (+ i 1)))
+
+  (def text (if (empty? text-parts) nil (string/join text-parts " ")))
 
   {:text text
    :source source

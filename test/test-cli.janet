@@ -112,6 +112,25 @@
 
   (print "Text position test passed!"))
 
+(defn test-multi-word-text []
+  (print "\nTesting multi-word text without quotes...")
+  (def conf (make-test-config))
+
+  # Multiple positional words joined with spaces
+  (def res1 (cli/parse-args @["번역하고" "싶은" "표현"] conf))
+  (assert (= (res1 :text) "번역하고 싶은 표현") "Multiple words should be joined with spaces")
+
+  # Words split around flags
+  (def res2 (cli/parse-args @["hello" "-t" "Korean" "big" "world"] conf))
+  (assert (= (res2 :text) "hello big world") "Words around flags should be joined")
+  (assert (= (res2 :target) "Korean") "Flag between words should still be parsed")
+
+  # Quoted sentence still works as a single argument
+  (def res3 (cli/parse-args @["hello big world"] conf))
+  (assert (= (res3 :text) "hello big world") "Quoted sentence should be unchanged")
+
+  (print "Multi-word text test passed!"))
+
 (defn test-temperature-parsing []
   (print "\nTesting temperature parsing...")
   (def conf (make-test-config))
@@ -343,6 +362,7 @@
   (test-long-flags)
   (test-flag-combinations)
   (test-text-position)
+  (test-multi-word-text)
   (test-temperature-parsing)
   (test-priority)
   (test-return-structure)

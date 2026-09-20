@@ -40,6 +40,9 @@ janet src/main.janet --init
 # Basic usage with defaults (Korean → English)
 janet src/main.janet "안녕하세요"
 
+# Quotes are optional: non-flag words are joined with spaces into one sentence
+janet src/main.janet 번역하고 싶은 표현
+
 # Specify target language only
 janet src/main.janet "안녕하세요" --target Spanish
 janet src/main.janet "안녕하세요" -t French
