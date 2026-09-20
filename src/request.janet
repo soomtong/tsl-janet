@@ -170,14 +170,14 @@ This module provides:
   - target-lang: Target language
   - temperature: Temperature for generation (0.0-2.0)
   - vendor: Vendor name (string or keyword, e.g., "groq", :openai)
-  - model: Model name (e.g., "groq/compound-mini", "gpt-4o-mini")
+  - model: Model name (e.g., "qwen/qwen3.8-27b", "gpt-4o-mini")
   - persona: Optional persona keyword (default: :default)
 
   Returns:
   The translated text as a string, or nil if the request fails.
 
   Example:
-    (make-llm-request "Hello" "key" "English" "Korean" 0.3 "groq" "groq/compound-mini")
+    (make-llm-request "Hello" "key" "English" "Korean" 0.3 "groq" "qwen/qwen3.8-27b")
     (make-llm-request "Hello" "key" "English" "Korean" 0.3 :anthropic "claude-4-5-haiku-20241022")
   ``
   [text api-key source-lang target-lang temperature vendor model &opt persona]

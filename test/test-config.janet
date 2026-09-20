@@ -60,7 +60,7 @@
 
   # Check default values
   (assert (= (config/default-config :vendor) "groq") "Default vendor should be groq")
-  (assert (= (config/default-config :model) "groq/compound-mini") "Default model should be groq/compound-mini")
+  (assert (= (config/default-config :model) "qwen/qwen3.8-27b") "Default model should be qwen/qwen3.8-27b")
   (assert (= (config/default-config :source) "Korean") "Default source should be Korean")
   (assert (= (config/default-config :target) "English") "Default target should be English")
   (assert (= (config/default-config :persona) "default") "Default persona should be default")
@@ -156,7 +156,7 @@
   (assert (= (conf :source) "French") "Should use custom source")
   (assert (= (conf :target) "German") "Should use custom target")
   (assert (= (conf :vendor) "groq") "Should use default vendor")
-  (assert (= (conf :model) "groq/compound-mini") "Should use default model")
+  (assert (= (conf :model) "qwen/qwen3.8-27b") "Should use default model")
   (assert (= (conf :temperature) 0.3) "Should use default temperature")
   (assert (= (conf :copy) true) "Should use default copy")
 

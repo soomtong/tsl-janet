@@ -4,7 +4,7 @@
 
 (def default-config
   {:vendor "groq"
-   :model "groq/compound-mini"
+   :model "qwen/qwen3.8-27b"
    :source "Korean"
    :target "English"
    :persona "default"

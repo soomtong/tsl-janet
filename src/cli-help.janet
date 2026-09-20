@@ -56,7 +56,7 @@ This module provides:
   (print "=== Current Configuration ===")
   (print "")
   (printf "Vendor:       %s" (or (get parsed :vendor) "groq"))
-  (printf "Model:        %s" (or (get parsed :model) "groq/compound-mini"))
+  (printf "Model:        %s" (or (get parsed :model) "qwen/qwen3.8-27b"))
   (printf "Source:       %s" (or (get parsed :source) "Korean"))
   (printf "Target:       %s" (or (get parsed :target) "English"))
   (printf "Temperature:  %.1f" (or (get parsed :temperature) 0.3))

@@ -181,7 +181,7 @@ Integration tests use temporary directories and environment cleanup to avoid sid
 ```janet
 # Config format (JSON on disk, struct in code)
 {:vendor "groq"
- :model "groq/compound-mini"
+ :model "qwen/qwen3.8-27b"
  :source "Korean"
  :target "English"
  :persona "default"
@@ -197,14 +197,14 @@ Integration tests use temporary directories and environment cleanup to avoid sid
  :temperature 0.3
  :copy true
  :vendor "groq"
- :model "groq/compound-mini"
+ :model "qwen/qwen3.8-27b"
  :api-key "..."
  :show-config false
  :show-prompt false
  :show-persona false}
 
 # API request payload
-{:model "groq/compound-mini"
+{:model "qwen/qwen3.8-27b"
  :messages [{:role "system" :content "..."}
             {:role "user" :content "Translate from Korean to English: ..."}]
  :temperature 0.3}
@@ -249,14 +249,14 @@ All functions follow [Janet docstring guidelines](https://janet-lang.org/docs/do
     - target-lang: Target language
     - temperature: Temperature (0.0-2.0)
     - vendor: Vendor name (string or keyword, e.g., "groq", :openai)
-    - model: Model name (e.g., "groq/compound-mini", "gpt-4o-mini")
+    - model: Model name (e.g., "qwen/qwen3.8-27b", "gpt-4o-mini")
     - persona: Optional persona keyword (default: :default)
 
     Returns:
     Translated text string, or nil on failure.
 
     Example:
-      (make-llm-request "Hello" "key" "English" "Korean" 0.3 "groq" "groq/compound-mini")
+      (make-llm-request "Hello" "key" "English" "Korean" 0.3 "groq" "qwen/qwen3.8-27b")
       (make-llm-request "Hello" "key" "English" "Korean" 0.3 :anthropic "claude-4-5-haiku-20241022")
     ``
     [text api-key source-lang target-lang temperature vendor model &opt persona]

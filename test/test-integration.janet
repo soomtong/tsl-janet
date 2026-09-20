@@ -348,7 +348,7 @@
   (assert (= (conf :source) "French") "Should use partial config value")
   (assert (= (conf :target) "German") "Should use partial config value")
   (assert (= (conf :vendor) "groq") "Should use default vendor")
-  (assert (= (conf :model) "groq/compound-mini") "Should use default model")
+  (assert (= (conf :model) "qwen/qwen3.8-27b") "Should use default model")
   (assert (= (conf :temperature) 0.3) "Should use default temperature")
   (assert (= (conf :copy) true) "Should use default copy")
 

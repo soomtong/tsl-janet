@@ -25,14 +25,14 @@
 
 # Models available for each vendor
 (def vendor-models
-  {:groq @["groq/compound-mini" "groq/compound"]
+  {:groq @["qwen/qwen3.8-27b" "openai/gpt-oss-120b" "groq/compound-mini" "groq/compound"]
    :openai @["gpt-4o-mini" "gpt-3.5-turbo"]
    :anthropic @["claude-4-5-haiku-20241022"]
    :deepseek @["deepseek-chat" "deepseek-reasoner"]
    :gemini @["gemini-2.0-flash-exp" "gemini-1.5-pro" "gemini-1.5-flash"]
    :mistral @["mistral-large-latest" "mistral-small-latest"]
    :openrouter @["openrouter/auto"]
-   :cerebras @["cerebras/llama3.1-8b"]})
+   :cerebras @["qwen-3.8-27b" "gpt-oss-120b"]})
 
 # Common languages
 (def common-languages

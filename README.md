@@ -203,12 +203,12 @@ Hello
 
 | Vendor | Env Variable | Default Model |
 |--------|--------------|---------------|
-| **Groq** | `GROQ_API_KEY` | `groq/compound-mini` |
+| **Groq** | `GROQ_API_KEY` | `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, `groq/compound-mini` |
 | **OpenAI** | `OPENAI_API_KEY` | `gpt-4o-mini` |
 | **Anthropic** | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet-20241022` |
 | **Gemini** | `GEMINI_API_KEY` | `gemini-1.5-flash` |
 | **DeepSeek** | `DEEPSEEK_API_KEY` | `deepseek-chat` |
-| **Cerebras** | `CEREBRAS_API_KEY` | `llama3.1-8b` |
+| **Cerebras** | `CEREBRAS_API_KEY` | `qwen-3.8-27b`, `gpt-oss-120b` |
 | **OpenRouter** | `OPENROUTER_API_KEY` | `openai/gpt-3.5-turbo` |
 | **Mistral** | `MISTRAL_API_KEY` | `mistral-small-latest` |
 
